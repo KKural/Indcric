@@ -210,442 +210,463 @@
                                 <button type="button" onclick="editTeamName('team1')" class="edit-button">Edit</button>
                                 {% endif %}
                             </h3>
-                            <!-- prettier-ignore -->
+                            {% if user.is_staff %}
                             <div id="team1-players"
-                                class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto" {% if
-                                user.is_staff %}ondrop="drop(event)" ondragover="allowDrop(event)" {% endif %}>
-                                {% if team1 %}
-                                {% for player in team1_players %}
-                                <div class="bg-white p-2 rounded-md shadow-sm mb-2 {% if user.is_staff %}cursor-move{% endif %}"
-                                    {% if user.is_staff %}draggable="true" ondragstart="drag(event)" {% endif %}
-                                    id="user-{{ player.user.id }}" data-user-id="{{ player.user.id }}">
-                                    {% if player.user.role|lower == 'batsman' %}
-                                    <img src="{% static 'icons/bat.png' %}" class="inline-block w-4 h-4 mr-1"
-                                        alt="🏏" />
-                                    {% elif player.user.role|lower == 'bowler' %}
-                                    <img src="{% static 'icons/ball.png' %}" class="inline-block w-4 h-4 mr-1"
-                                        alt="🔴" />
-                                    {% elif player.user.role|lower == 'allrounder' %}
-                                    <img src="{% static 'icons/bat.png' %}" class="inline-block w-4 h-4 mr-1"
-                                        alt="🏏" />
-                                    <img src="{% static 'icons/ball.png' %}" class="inline-block w-4 h-4 mr-1"
-                                        alt="🔴" />
+                                class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto"
+                                ondrop="drop(event)" ondragover="allowDrop(event)">
+                                {% else %}
+                                <div id="team1-players"
+                                    class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto">
                                     {% endif %}
-                                    {{ player.user.username }}
-                                    {% if player.user.id == team1.captain.id %}
-                                    <span class="captain-badge">C</span>
-                                    {% endif %}
+                                    {% if team1 %}
+                                    {% for player in team1_players %}
+                                    {% if user.is_staff %}
+                                    <div class="bg-white p-2 rounded-md shadow-sm mb-2 cursor-move" draggable="true"
+                                        ondragstart="drag(event)" id="user-{{ player.user.id }}"
+                                        data-user-id="{{ player.user.id }}">
+                                        {% else %}
+                                        <div class="bg-white p-2 rounded-md shadow-sm mb-2"
+                                            id="user-{{ player.user.id }}" data-user-id="{{ player.user.id }}">
+                                            {% endif %}
+                                            {% if player.user.role|lower == 'batsman' %}
+                                            <img src="{% static 'icons/bat.png' %}" class="inline-block w-4 h-4 mr-1"
+                                                alt="🏏" />
+                                            {% elif player.user.role|lower == 'bowler' %}
+                                            <img src="{% static 'icons/ball.png' %}" class="inline-block w-4 h-4 mr-1"
+                                                alt="🔴" />
+                                            {% elif player.user.role|lower == 'allrounder' %}
+                                            <img src="{% static 'icons/bat.png' %}" class="inline-block w-4 h-4 mr-1"
+                                                alt="🏏" />
+                                            <img src="{% static 'icons/ball.png' %}" class="inline-block w-4 h-4 mr-1"
+                                                alt="🔴" />
+                                            {% endif %}
+                                            {{ player.user.username }}
+                                            {% if player.user.id == team1.captain.id %}
+                                            <span class="captain-badge">C</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                {% endfor %}
-                                {% endif %}
-                            </div>
-                        </div>
 
-                        <!-- Team 2 -->
-                        <div class="w-full {% if user.is_staff %}md:w-1/3{% else %}md:w-1/2{% endif %}">
-                            <h3 class="text-lg font-semibold mb-2">
-                                <span id="team2-name">{% if team2 %}{{ team2.name }}{% else %}Team 2{% endif %}</span>
-                                {% if user.is_staff %}
-                                <button type="button" onclick="editTeamName('team2')" class="edit-button">Edit</button>
-                                {% endif %}
-                            </h3>
-                            <!-- prettier-ignore -->
-                            <div id="team2-players"
-                                class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto" {% if
-                                user.is_staff %}ondrop="drop(event)" ondragover="allowDrop(event)" {% endif %}>
-                                {% if team2 %}
-                                {% for player in team2_players %}
-                                <div class="bg-white p-2 rounded-md shadow-sm mb-2 {% if user.is_staff %}cursor-move{% endif %}"
-                                    {% if user.is_staff %}draggable="true" ondragstart="drag(event)" {% endif %}
-                                    id="user-{{ player.user.id }}" data-user-id="{{ player.user.id }}">
-                                    {% if player.user.role|lower == 'batsman' %}
-                                    <img src="{% static 'icons/bat.png' %}" class="inline-block w-4 h-4 mr-1"
-                                        alt="🏏" />
-                                    {% elif player.user.role|lower == 'bowler' %}
-                                    <img src="{% static 'icons/ball.png' %}" class="inline-block w-4 h-4 mr-1"
-                                        alt="🔴" />
-                                    {% elif player.user.role|lower == 'allrounder' %}
-                                    <img src="{% static 'icons/bat.png' %}" class="inline-block w-4 h-4 mr-1"
-                                        alt="🏏" />
-                                    <img src="{% static 'icons/ball.png' %}" class="inline-block w-4 h-4 mr-1"
-                                        alt="🔴" />
-                                    {% endif %}
-                                    {{ player.user.username }}
-                                    {% if player.user.id == team2.captain.id %}
-                                    <span class="captain-badge">C</span>
+                                <!-- Team 2 -->
+                                <div class="w-full {% if user.is_staff %}md:w-1/3{% else %}md:w-1/2{% endif %}">
+                                    <h3 class="text-lg font-semibold mb-2">
+                                        <span id="team2-name">{% if team2 %}{{ team2.name }}{% else %}Team 2{% endif
+                                            %}</span>
+                                        {% if user.is_staff %}
+                                        <button type="button" onclick="editTeamName('team2')"
+                                            class="edit-button">Edit</button>
+                                        {% endif %}
+                                    </h3>
+                                    {% if user.is_staff %}
+                                    <div id="team2-players"
+                                        class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto"
+                                        ondrop="drop(event)" ondragover="allowDrop(event)">
+                                        {% else %}
+                                        <div id="team2-players"
+                                            class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto">
+                                            {% endif %}
+                                            {% if team2 %}
+                                            {% for player in team2_players %}
+                                            {% if user.is_staff %}
+                                            <div class="bg-white p-2 rounded-md shadow-sm mb-2 cursor-move"
+                                                draggable="true" ondragstart="drag(event)"
+                                                id="user-{{ player.user.id }}" data-user-id="{{ player.user.id }}">
+                                                {% else %}
+                                                <div class="bg-white p-2 rounded-md shadow-sm mb-2"
+                                                    id="user-{{ player.user.id }}" data-user-id="{{ player.user.id }}">
+                                                    {% endif %}
+                                                    {% if player.user.role|lower == 'batsman' %}
+                                                    <img src="{% static 'icons/bat.png' %}"
+                                                        class="inline-block w-4 h-4 mr-1" alt="🏏" />
+                                                    {% elif player.user.role|lower == 'bowler' %}
+                                                    <img src="{% static 'icons/ball.png' %}"
+                                                        class="inline-block w-4 h-4 mr-1" alt="🔴" />
+                                                    {% elif player.user.role|lower == 'allrounder' %}
+                                                    <img src="{% static 'icons/bat.png' %}"
+                                                        class="inline-block w-4 h-4 mr-1" alt="🏏" />
+                                                    <img src="{% static 'icons/ball.png' %}"
+                                                        class="inline-block w-4 h-4 mr-1" alt="🔴" />
+                                                    {% endif %}
+                                                    {{ player.user.username }}
+                                                    {% if player.user.id == team2.captain.id %}
+                                                    <span class="captain-badge">C</span>
+                                                    {% endif %}
+                                                </div>
+                                                {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {% if user.is_staff %}
+                                    <!-- Save Teams Form (Only visible to admins) -->
+                                    <form id="save-teams-form" class="mt-6" method="POST"
+                                        action="{% url 'save_teams' session.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" id="team1_name_input" name="team1_name"
+                                            value="{% if team1 %}{{ team1.name }}{% else %}Team 1{% endif %}">
+                                        <input type="hidden" id="team2_name_input" name="team2_name"
+                                            value="{% if team2 %}{{ team2.name }}{% else %}Team 2{% endif %}">
+                                        <input type="hidden" id="team1_users" name="team1_players">
+                                        <input type="hidden" id="team2_users" name="team2_players">
+                                        <input type="hidden" id="team1_captain" name="team1_captain">
+                                        <input type="hidden" id="team2_captain" name="team2_captain">
+
+                                        <div class="flex justify-end">
+                                            <button type="submit"
+                                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                                                Save Teams
+                                            </button>
+                                        </div>
+                                    </form>
                                     {% endif %}
                                 </div>
-                                {% endfor %}
-                                {% endif %}
                             </div>
                         </div>
                     </div>
-
-                    {% if user.is_staff %}
-                    <!-- Save Teams Form (Only visible to admins) -->
-                    <form id="save-teams-form" class="mt-6" method="POST" action="{% url 'save_teams' session.id %}">
-                        {% csrf_token %}
-                        <input type="hidden" id="team1_name_input" name="team1_name"
-                            value="{% if team1 %}{{ team1.name }}{% else %}Team 1{% endif %}">
-                        <input type="hidden" id="team2_name_input" name="team2_name"
-                            value="{% if team2 %}{{ team2.name }}{% else %}Team 2{% endif %}">
-                        <input type="hidden" id="team1_users" name="team1_players">
-                        <input type="hidden" id="team2_users" name="team2_players">
-                        <input type="hidden" id="team1_captain" name="team1_captain">
-                        <input type="hidden" id="team2_captain" name="team2_captain">
-
-                        <div class="flex justify-end">
-                            <button type="submit"
-                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                                Save Teams
-                            </button>
-                        </div>
-                    </form>
-                    {% endif %}
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<style>
-    .edit-button {
-        background-color: transparent;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        margin-left: 5px;
-        font-size: 0.8em;
-        color: gray;
-    }
+                <style>
+                    .edit-button {
+                        background-color: transparent;
+                        border: none;
+                        cursor: pointer;
+                        padding: 0;
+                        margin-left: 5px;
+                        font-size: 0.8em;
+                        color: gray;
+                    }
 
-    .edit-button:hover {
-        color: darkgray;
-    }
+                    .edit-button:hover {
+                        color: darkgray;
+                    }
 
-    .captain-badge {
-        display: inline-block;
-        background-color: #4b5563;
-        color: white;
-        border-radius: 50%;
-        width: 18px;
-        height: 18px;
-        text-align: center;
-        line-height: 18px;
-        font-size: 0.7rem;
-        font-weight: bold;
-        margin-left: 4px;
-        vertical-align: middle;
-    }
-</style>
+                    .captain-badge {
+                        display: inline-block;
+                        background-color: #4b5563;
+                        color: white;
+                        border-radius: 50%;
+                        width: 18px;
+                        height: 18px;
+                        text-align: center;
+                        line-height: 18px;
+                        font-size: 0.7rem;
+                        font-weight: bold;
+                        margin-left: 4px;
+                        vertical-align: middle;
+                    }
+                </style>
 
-{% if user.is_staff %}
-<script>
-    let team1Name = '{% if team1 %}{{ team1.name }}{% else %}Team 1{% endif %}';
-    let team2Name = '{% if team2 %}{{ team2.name }}{% else %}Team 2{% endif %}';
-    let isEditingTeamName = false;
+                {% if user.is_staff %}
+                <script>
+                    let team1Name = '{% if team1 %}{{ team1.name }}{% else %}Team 1{% endif %}';
+                    let team2Name = '{% if team2 %}{{ team2.name }}{% else %}Team 2{% endif %}';
+                    let isEditingTeamName = false;
 
-    function editTeamName(team) {
-        isEditingTeamName = true;
-        const teamNameSpan = document.getElementById(team + '-name');
-        const currentName = team === 'team1' ? team1Name : team2Name;
-        const h3 = teamNameSpan.parentNode;
+                    function editTeamName(team) {
+                        isEditingTeamName = true;
+                        const teamNameSpan = document.getElementById(team + '-name');
+                        const currentName = team === 'team1' ? team1Name : team2Name;
+                        const h3 = teamNameSpan.parentNode;
 
-        const inputField = document.createElement('input');
-        inputField.type = 'text';
-        inputField.value = currentName;
-        inputField.classList.add("shadow", "appearance-none", "border", "rounded", "w-full", "py-2", "px-3", "text-gray-700", "leading-tight", "focus:outline-none", "focus:shadow-outline");
+                        const inputField = document.createElement('input');
+                        inputField.type = 'text';
+                        inputField.value = currentName;
+                        inputField.classList.add("shadow", "appearance-none", "border", "rounded", "w-full", "py-2", "px-3", "text-gray-700", "leading-tight", "focus:outline-none", "focus:shadow-outline");
 
-        const saveName = () => {
-            const newName = inputField.value.trim() || (team === 'team1' ? 'Team 1' : 'Team 2');
-            if (team === 'team1') {
-                team1Name = newName;
-                document.getElementById('team1_name_input').value = team1Name;
-            } else {
-                team2Name = newName;
-                document.getElementById('team2_name_input').value = team2Name;
-            }
-            updateTeamNameDisplay(team);
-            isEditingTeamName = false;
-        };
+                        const saveName = () => {
+                            const newName = inputField.value.trim() || (team === 'team1' ? 'Team 1' : 'Team 2');
+                            if (team === 'team1') {
+                                team1Name = newName;
+                                document.getElementById('team1_name_input').value = team1Name;
+                            } else {
+                                team2Name = newName;
+                                document.getElementById('team2_name_input').value = team2Name;
+                            }
+                            updateTeamNameDisplay(team);
+                            isEditingTeamName = false;
+                        };
 
-        inputField.addEventListener('blur', saveName);
+                        inputField.addEventListener('blur', saveName);
 
-        inputField.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                inputField.blur();
-            }
-        });
+                        inputField.addEventListener('keypress', function (e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                inputField.blur();
+                            }
+                        });
 
-        h3.replaceChild(inputField, teamNameSpan);
-        // Remove the edit button while editing
-        const editButton = h3.querySelector('.edit-button');
-        if (editButton) {
-            h3.removeChild(editButton);
-        }
-        inputField.focus();
-    }
-
-    function updateTeamNameDisplay(team) {
-        const h3 = document.querySelector(`#${team}-players`).parentNode.querySelector('h3');
-
-        const newTeamNameSpan = document.createElement('span');
-        newTeamNameSpan.id = team + '-name';
-        newTeamNameSpan.textContent = team === 'team1' ? team1Name : team2Name;
-
-        const editButton = document.createElement('button');
-        editButton.textContent = 'Edit';
-        editButton.onclick = function (e) {
-            e.preventDefault();
-            editTeamName(team);
-        };
-        editButton.type = 'button'; // Prevent form submission
-        editButton.classList.add("edit-button");
-
-        h3.innerHTML = '';
-        h3.appendChild(newTeamNameSpan);
-        h3.appendChild(editButton);
-    }
-
-    function allowDrop(event) {
-        event.preventDefault();
-    }
-
-    function drag(event) {
-        event.dataTransfer.setData("user_id", event.target.id);
-    }
-
-    function drop(event) {
-        event.preventDefault();
-        var user_id = event.dataTransfer.getData("user_id");
-        var userElement = document.getElementById(user_id);
-        if (userElement && userElement.dataset.userId) {
-            // Remove captain badge from the element if it exists
-            const existingBadge = userElement.querySelector('.captain-badge');
-            if (existingBadge) {
-                userElement.removeChild(existingBadge);
-            }
-
-            // Use event.currentTarget instead of event.target
-            const targetContainer = event.currentTarget;
-            targetContainer.appendChild(userElement);
-
-            // Check if this is the first player in the team and add captain badge
-            if (targetContainer.id === 'team1-players' || targetContainer.id === 'team2-players') {
-                if (targetContainer.children.length === 1) {
-                    const captainBadge = document.createElement('span');
-                    captainBadge.className = 'captain-badge';
-                    captainBadge.textContent = 'C';
-                    userElement.appendChild(captainBadge);
-                }
-            }
-        }
-        updateHiddenFields();
-    }
-
-    function updateHiddenFields() {
-        const team1Container = document.getElementById("team1-players");
-        const team2Container = document.getElementById("team2-players");
-
-        const team1Users = Array.from(team1Container.children)
-            .filter(el => el.dataset && el.dataset.userId && el.dataset.userId.trim() !== "")
-            .map(el => el.dataset.userId);
-        const team2Users = Array.from(team2Container.children)
-            .filter(el => el.dataset && el.dataset.userId && el.dataset.userId.trim() !== "")
-            .map(el => el.dataset.userId);
-
-        document.getElementById("team1_users").value = team1Users.join(',');
-        document.getElementById("team2_users").value = team2Users.join(',');
-
-        console.log("Team 1 users:", team1Users);
-        console.log("Team 2 users:", team2Users);
-
-        // Validate the form values are set correctly
-        console.log("Form field values:", {
-            team1_users: document.getElementById("team1_users").value,
-            team2_users: document.getElementById("team2_users").value,
-            team1_captain: document.getElementById("team1_captain").value,
-            team2_captain: document.getElementById("team2_captain").value
-        });
-
-        // Set captain as the first player in each team
-        if (team1Users.length > 0) {
-            document.getElementById("team1_captain").value = team1Users[0];
-        }
-        if (team2Users.length > 0) {
-            document.getElementById("team2_captain").value = team2Users[0];
-        }
-    }
-
-    function shuffleUsers() {
-        const availableUsersContainer = document.getElementById("available-users");
-        const team1Container = document.getElementById("team1-players");
-        const team2Container = document.getElementById("team2-players");
-
-        // Get all users from all containers
-        const allUsers = Array.from(availableUsersContainer.children)
-            .concat(Array.from(team1Container.children))
-            .concat(Array.from(team2Container.children))
-            .filter(child => child.id && child.id.startsWith("user-"));
-
-        // Remove any captain badges
-        allUsers.forEach(user => {
-            const captainBadge = user.querySelector('.captain-badge');
-            if (captainBadge) {
-                user.removeChild(captainBadge);
-            }
-        });
-
-        // Clear existing containers
-        availableUsersContainer.innerHTML = "";
-        team1Container.innerHTML = "";
-        team2Container.innerHTML = "";
-
-        // Shuffle all users
-        for (let i = allUsers.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [allUsers[i], allUsers[j]] = [allUsers[j], allUsers[i]];
-        }
-
-        // Distribute users back to containers
-        const totalUsers = allUsers.length;
-        const perTeam = Math.floor(totalUsers / 2);
-
-        for (let i = 0; i < allUsers.length; i++) {
-            if (i < perTeam) {
-                // Add captain badge to first player in team 1
-                if (i === 0) {
-                    const captainBadge = document.createElement('span');
-                    captainBadge.className = 'captain-badge';
-                    captainBadge.textContent = 'C';
-                    allUsers[i].appendChild(captainBadge);
-                }
-                team1Container.appendChild(allUsers[i]);
-            } else if (i < perTeam * 2) {
-                // Add captain badge to first player in team 2
-                if (i === perTeam) {
-                    const captainBadge = document.createElement('span');
-                    captainBadge.className = 'captain-badge';
-                    captainBadge.textContent = 'C';
-                    allUsers[i].appendChild(captainBadge);
-                }
-                team2Container.appendChild(allUsers[i]);
-            } else {
-                availableUsersContainer.appendChild(allUsers[i]);
-            }
-        }
-
-        updateHiddenFields(); // Update hidden input fields after shuffle
-    }
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', function () {
-        // Set up shuffle button event listener
-        const shuffleBtn = document.getElementById('shuffle-teams-btn');
-        if (shuffleBtn) {
-            shuffleBtn.addEventListener('click', shuffleUsers);
-        }
-
-        // Set up balance teams button
-        const balanceBtn = document.getElementById('balance-teams-btn');
-        if (balanceBtn) {
-            balanceBtn.addEventListener('click', balanceTeams);
-        }
-
-        // Initialize hidden fields
-        updateHiddenFields();
-    });
-
-    function balanceTeams() {
-        const btn = document.getElementById('balance-teams-btn');
-        btn.textContent = '⏳ Balancing…';
-        btn.disabled = true;
-
-        fetch("{% url 'split_teams_balanced' session.id %}", {
-            method: 'GET',
-            headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
-        })
-            .then(r => r.json())
-            .then(data => {
-                if (data.error) { alert(data.error); btn.textContent = '⚖ Balance Teams'; btn.disabled = false; return; }
-
-                const availableContainer = document.getElementById('available-users');
-                const team1Container = document.getElementById('team1-players');
-                const team2Container = document.getElementById('team2-players');
-
-                // Gather all player elements
-                const allElements = {};
-                [availableContainer, team1Container, team2Container].forEach(c => {
-                    Array.from(c.children).forEach(el => {
-                        if (el.dataset && el.dataset.userId) {
-                            const badge = el.querySelector('.captain-badge');
-                            if (badge) el.removeChild(badge);
-                            allElements[el.dataset.userId] = el;
+                        h3.replaceChild(inputField, teamNameSpan);
+                        // Remove the edit button while editing
+                        const editButton = h3.querySelector('.edit-button');
+                        if (editButton) {
+                            h3.removeChild(editButton);
                         }
+                        inputField.focus();
+                    }
+
+                    function updateTeamNameDisplay(team) {
+                        const h3 = document.querySelector(`#${team}-players`).parentNode.querySelector('h3');
+
+                        const newTeamNameSpan = document.createElement('span');
+                        newTeamNameSpan.id = team + '-name';
+                        newTeamNameSpan.textContent = team === 'team1' ? team1Name : team2Name;
+
+                        const editButton = document.createElement('button');
+                        editButton.textContent = 'Edit';
+                        editButton.onclick = function (e) {
+                            e.preventDefault();
+                            editTeamName(team);
+                        };
+                        editButton.type = 'button'; // Prevent form submission
+                        editButton.classList.add("edit-button");
+
+                        h3.innerHTML = '';
+                        h3.appendChild(newTeamNameSpan);
+                        h3.appendChild(editButton);
+                    }
+
+                    function allowDrop(event) {
+                        event.preventDefault();
+                    }
+
+                    function drag(event) {
+                        event.dataTransfer.setData("user_id", event.target.id);
+                    }
+
+                    function drop(event) {
+                        event.preventDefault();
+                        var user_id = event.dataTransfer.getData("user_id");
+                        var userElement = document.getElementById(user_id);
+                        if (userElement && userElement.dataset.userId) {
+                            // Remove captain badge from the element if it exists
+                            const existingBadge = userElement.querySelector('.captain-badge');
+                            if (existingBadge) {
+                                userElement.removeChild(existingBadge);
+                            }
+
+                            // Use event.currentTarget instead of event.target
+                            const targetContainer = event.currentTarget;
+                            targetContainer.appendChild(userElement);
+
+                            // Check if this is the first player in the team and add captain badge
+                            if (targetContainer.id === 'team1-players' || targetContainer.id === 'team2-players') {
+                                if (targetContainer.children.length === 1) {
+                                    const captainBadge = document.createElement('span');
+                                    captainBadge.className = 'captain-badge';
+                                    captainBadge.textContent = 'C';
+                                    userElement.appendChild(captainBadge);
+                                }
+                            }
+                        }
+                        updateHiddenFields();
+                    }
+
+                    function updateHiddenFields() {
+                        const team1Container = document.getElementById("team1-players");
+                        const team2Container = document.getElementById("team2-players");
+
+                        const team1Users = Array.from(team1Container.children)
+                            .filter(el => el.dataset && el.dataset.userId && el.dataset.userId.trim() !== "")
+                            .map(el => el.dataset.userId);
+                        const team2Users = Array.from(team2Container.children)
+                            .filter(el => el.dataset && el.dataset.userId && el.dataset.userId.trim() !== "")
+                            .map(el => el.dataset.userId);
+
+                        document.getElementById("team1_users").value = team1Users.join(',');
+                        document.getElementById("team2_users").value = team2Users.join(',');
+
+                        console.log("Team 1 users:", team1Users);
+                        console.log("Team 2 users:", team2Users);
+
+                        // Validate the form values are set correctly
+                        console.log("Form field values:", {
+                            team1_users: document.getElementById("team1_users").value,
+                            team2_users: document.getElementById("team2_users").value,
+                            team1_captain: document.getElementById("team1_captain").value,
+                            team2_captain: document.getElementById("team2_captain").value
+                        });
+
+                        // Set captain as the first player in each team
+                        if (team1Users.length > 0) {
+                            document.getElementById("team1_captain").value = team1Users[0];
+                        }
+                        if (team2Users.length > 0) {
+                            document.getElementById("team2_captain").value = team2Users[0];
+                        }
+                    }
+
+                    function shuffleUsers() {
+                        const availableUsersContainer = document.getElementById("available-users");
+                        const team1Container = document.getElementById("team1-players");
+                        const team2Container = document.getElementById("team2-players");
+
+                        // Get all users from all containers
+                        const allUsers = Array.from(availableUsersContainer.children)
+                            .concat(Array.from(team1Container.children))
+                            .concat(Array.from(team2Container.children))
+                            .filter(child => child.id && child.id.startsWith("user-"));
+
+                        // Remove any captain badges
+                        allUsers.forEach(user => {
+                            const captainBadge = user.querySelector('.captain-badge');
+                            if (captainBadge) {
+                                user.removeChild(captainBadge);
+                            }
+                        });
+
+                        // Clear existing containers
+                        availableUsersContainer.innerHTML = "";
+                        team1Container.innerHTML = "";
+                        team2Container.innerHTML = "";
+
+                        // Shuffle all users
+                        for (let i = allUsers.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [allUsers[i], allUsers[j]] = [allUsers[j], allUsers[i]];
+                        }
+
+                        // Distribute users back to containers
+                        const totalUsers = allUsers.length;
+                        const perTeam = Math.floor(totalUsers / 2);
+
+                        for (let i = 0; i < allUsers.length; i++) {
+                            if (i < perTeam) {
+                                // Add captain badge to first player in team 1
+                                if (i === 0) {
+                                    const captainBadge = document.createElement('span');
+                                    captainBadge.className = 'captain-badge';
+                                    captainBadge.textContent = 'C';
+                                    allUsers[i].appendChild(captainBadge);
+                                }
+                                team1Container.appendChild(allUsers[i]);
+                            } else if (i < perTeam * 2) {
+                                // Add captain badge to first player in team 2
+                                if (i === perTeam) {
+                                    const captainBadge = document.createElement('span');
+                                    captainBadge.className = 'captain-badge';
+                                    captainBadge.textContent = 'C';
+                                    allUsers[i].appendChild(captainBadge);
+                                }
+                                team2Container.appendChild(allUsers[i]);
+                            } else {
+                                availableUsersContainer.appendChild(allUsers[i]);
+                            }
+                        }
+
+                        updateHiddenFields(); // Update hidden input fields after shuffle
+                    }
+
+                    // Initialize
+                    document.addEventListener('DOMContentLoaded', function () {
+                        // Set up shuffle button event listener
+                        const shuffleBtn = document.getElementById('shuffle-teams-btn');
+                        if (shuffleBtn) {
+                            shuffleBtn.addEventListener('click', shuffleUsers);
+                        }
+
+                        // Set up balance teams button
+                        const balanceBtn = document.getElementById('balance-teams-btn');
+                        if (balanceBtn) {
+                            balanceBtn.addEventListener('click', balanceTeams);
+                        }
+
+                        // Initialize hidden fields
+                        updateHiddenFields();
                     });
-                });
 
-                availableContainer.innerHTML = '';
-                team1Container.innerHTML = '';
-                team2Container.innerHTML = '';
+                    function balanceTeams() {
+                        const btn = document.getElementById('balance-teams-btn');
+                        btn.textContent = '⏳ Balancing…';
+                        btn.disabled = true;
 
-                data.team_a.forEach((p, i) => {
-                    const el = allElements[String(p.id)];
-                    if (el) {
-                        if (i === 0) { const b = document.createElement('span'); b.className = 'captain-badge'; b.textContent = 'C'; el.appendChild(b); }
-                        team1Container.appendChild(el);
+                        fetch("{% url 'split_teams_balanced' session.id %}", {
+                            method: 'GET',
+                            headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+                        })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.error) { alert(data.error); btn.textContent = '⚖ Balance Teams'; btn.disabled = false; return; }
+
+                                const availableContainer = document.getElementById('available-users');
+                                const team1Container = document.getElementById('team1-players');
+                                const team2Container = document.getElementById('team2-players');
+
+                                // Gather all player elements
+                                const allElements = {};
+                                [availableContainer, team1Container, team2Container].forEach(c => {
+                                    Array.from(c.children).forEach(el => {
+                                        if (el.dataset && el.dataset.userId) {
+                                            const badge = el.querySelector('.captain-badge');
+                                            if (badge) el.removeChild(badge);
+                                            allElements[el.dataset.userId] = el;
+                                        }
+                                    });
+                                });
+
+                                availableContainer.innerHTML = '';
+                                team1Container.innerHTML = '';
+                                team2Container.innerHTML = '';
+
+                                data.team_a.forEach((p, i) => {
+                                    const el = allElements[String(p.id)];
+                                    if (el) {
+                                        if (i === 0) { const b = document.createElement('span'); b.className = 'captain-badge'; b.textContent = 'C'; el.appendChild(b); }
+                                        team1Container.appendChild(el);
+                                    }
+                                });
+                                data.team_b.forEach((p, i) => {
+                                    const el = allElements[String(p.id)];
+                                    if (el) {
+                                        if (i === 0) { const b = document.createElement('span'); b.className = 'captain-badge'; b.textContent = 'C'; el.appendChild(b); }
+                                        team2Container.appendChild(el);
+                                    }
+                                });
+
+                                updateHiddenFields();
+                                btn.textContent = `⚖ Balanced (${data.score_a} vs ${data.score_b})`;
+                                btn.disabled = false;
+                            })
+                            .catch(() => { btn.textContent = '⚖ Balance Teams'; btn.disabled = false; alert('Error balancing teams.'); });
                     }
-                });
-                data.team_b.forEach((p, i) => {
-                    const el = allElements[String(p.id)];
-                    if (el) {
-                        if (i === 0) { const b = document.createElement('span'); b.className = 'captain-badge'; b.textContent = 'C'; el.appendChild(b); }
-                        team2Container.appendChild(el);
+
+                    function doToss() {
+                        const btn = document.getElementById('toss-btn');
+                        const display = document.getElementById('toss-result-display');
+                        btn.textContent = '🪙 Flipping…';
+                        btn.disabled = true;
+
+                        // Animate
+                        let count = 0;
+                        const sides = ['Heads', 'Tails'];
+                        const interval = setInterval(() => {
+                            display.textContent = sides[count % 2];
+                            display.classList.remove('hidden');
+                            count++;
+                            if (count > 8) clearInterval(interval);
+                        }, 120);
+
+                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+                        const token = csrfToken ? csrfToken.value : '';
+                        fetch("{% url 'toss' session.id %}", {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': token, 'Content-Type': 'application/json' }
+                        })
+                            .then(r => r.json())
+                            .then(data => {
+                                clearInterval(interval);
+                                const result = data.result.charAt(0).toUpperCase() + data.result.slice(1);
+                                const emoji = data.result === 'heads' ? '👑' : '🔵';
+                                display.textContent = emoji + ' ' + result + '!';
+                                display.classList.remove('hidden');
+                                btn.textContent = 'Toss Again';
+                                btn.disabled = false;
+                            })
+                            .catch(() => { btn.textContent = 'Flip Coin'; btn.disabled = false; });
                     }
-                });
-
-                updateHiddenFields();
-                btn.textContent = `⚖ Balanced (${data.score_a} vs ${data.score_b})`;
-                btn.disabled = false;
-            })
-            .catch(() => { btn.textContent = '⚖ Balance Teams'; btn.disabled = false; alert('Error balancing teams.'); });
-    }
-
-    function doToss() {
-        const btn = document.getElementById('toss-btn');
-        const display = document.getElementById('toss-result-display');
-        btn.textContent = '🪙 Flipping…';
-        btn.disabled = true;
-
-        // Animate
-        let count = 0;
-        const sides = ['Heads', 'Tails'];
-        const interval = setInterval(() => {
-            display.textContent = sides[count % 2];
-            display.classList.remove('hidden');
-            count++;
-            if (count > 8) clearInterval(interval);
-        }, 120);
-
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-        const token = csrfToken ? csrfToken.value : '';
-        fetch("{% url 'toss' session.id %}", {
-            method: 'POST',
-            headers: { 'X-CSRFToken': token, 'Content-Type': 'application/json' }
-        })
-            .then(r => r.json())
-            .then(data => {
-                clearInterval(interval);
-                const result = data.result.charAt(0).toUpperCase() + data.result.slice(1);
-                const emoji = data.result === 'heads' ? '👑' : '🔵';
-                display.textContent = emoji + ' ' + result + '!';
-                display.classList.remove('hidden');
-                btn.textContent = 'Toss Again';
-                btn.disabled = false;
-            })
-            .catch(() => { btn.textContent = 'Flip Coin'; btn.disabled = false; });
-    }
-</script>
-{% endif %}
-{% endblock %}
+                </script>
+                {% endif %}
+                {% endblock %}
