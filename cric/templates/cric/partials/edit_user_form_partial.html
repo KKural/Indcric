@@ -1,0 +1,99 @@
+{% comment %}
+This is a partial template for the edit user form without header/footer
+Used for modal/popup display with HTMX
+{% endcomment %}
+
+<div class="modal-content">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Edit User</h2>
+        <button onclick="document.getElementById('modalOverlay').classList.add('hidden');" class="text-gray-500 hover:text-gray-700">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+
+    {% if message %}
+    <div class="mb-4 p-4 {% if success %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %} rounded">
+        {{ message }}
+    </div>
+    {% endif %}
+    
+    {% if user %}
+    <form method="post" action="{% url 'cric:edit-user' user.id %}">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2 !inline-block" for="username">Username</label>
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                   id="username" name="username" type="text" placeholder="Username" value="{{ user.username }}">
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2 !inline-block" for="email">Email</label>
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                   id="email" name="email" type="email" placeholder="Email" value="{{ user.email }}">
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2 !inline-block" for="role">Role</label>
+            <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                    id="role" name="role">
+                <option value="batsman" {% if user.role == 'batsman' %}selected{% endif %}>Batsman</option>
+                <option value="bowler" {% if user.role == 'bowler' %}selected{% endif %}>Bowler</option>
+                <option value="allrounder" {% if user.role == 'allrounder' %}selected{% endif %}>All-rounder</option>
+            </select>
+        </div>
+        
+        <!-- Player Ratings -->
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2 !inline-block">Player Ratings</label>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-gray-700 text-xs mb-1 !inline-block" for="batting_rating">Batting (0-5)</label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                           id="batting_rating" name="batting_rating" type="number" step="0.1" min="0" max="5" value="{{ user.batting_rating }}">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-xs mb-1 !inline-block" for="bowling_rating">Bowling (0-5)</label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                           id="bowling_rating" name="bowling_rating" type="number" step="0.1" min="0" max="5" value="{{ user.bowling_rating }}">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-xs mb-1 !inline-block" for="fielding_rating">Fielding (0-5)</label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                           id="fielding_rating" name="fielding_rating" type="number" step="0.1" min="0" max="5" value="{{ user.fielding_rating }}">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2 !inline-block" for="wallet_amount">Wallet Amount</label>
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                   id="wallet_amount" name="wallet_amount" type="number" step="0.01" placeholder="Wallet Amount" value="{{ wallet_amount }}">
+        </div>
+        
+        <div class="mb-4">
+            <div class="flex items-center">
+                <input class="mr-2" type="checkbox" id="is_staff" name="is_staff" value="True" {% if user.is_staff %}checked{% endif %}>
+                <label class="text-gray-700 text-sm !inline-block" for="is_staff">Staff User</label>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <div class="flex items-center">
+                <input class="mr-2" type="checkbox" id="is_superuser" name="is_superuser" value="True" {% if user.is_superuser %}checked{% endif %}>
+                <label class="text-gray-700 text-sm !inline-block" for="is_superuser">Admin User</label>
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-between">
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                Save Changes
+            </button>
+            <button type="button" onclick="document.getElementById('modalOverlay').classList.add('hidden');" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
+                Cancel
+            </button>
+        </div>
+    </form>
+    {% endif %}
+</div>

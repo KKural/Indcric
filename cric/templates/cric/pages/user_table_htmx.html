@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% load static %}
+{% load render_table from django_tables2 %}
+{% load i18n %}
+
+{% block main %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="mb-6 flex justify-between items-center">
+        <h2 class="text-2xl font-bold">User Management</h2>
+        <a href="{% url 'cric:create_user' %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
+            Create User
+        </a>
+    </div>
+
+    <h1>Users table</h1>
+
+    {# Updated search form using correct URL name with HTMX push-url to maintain browser history #}
+    <form hx-get="{% url 'manage-users' %}" 
+          hx-target="div.table-container" 
+          hx-swap="outerHTML" 
+          hx-indicator=".progress" 
+          hx-push-url="true"
+          class="form-inline mb-3">
+        {% csrf_token %}
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+            <input type="text" name="query" placeholder="Search users" class="form-control mr-2" style="width: 60%; height: 50px;">
+            
+            <!-- Add wallet amount sorting dropdown -->
+            <div class="form-group">
+                <label for="sort_by_wallet">Sort by Wallet:</label>
+                <select name="sort_by_wallet" id="sort_by_wallet" class="form-control" onchange="this.form.submit()">
+                    <option value="">Default</option>
+                    <option value="asc" {% if request.GET.sort_by_wallet == 'asc' %}selected{% endif %}>Wallet (Low to High)</option>
+                    <option value="desc" {% if request.GET.sort_by_wallet == 'desc' %}selected{% endif %}>Wallet (High to Low)</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 10%; height: 60px;">Search</button>
+        </div>
+    </form>
+
+    <div class="progress">
+        <div class="indeterminate"></div>
+    </div>
+
+    <style>
+        /* Custom table styling for more compact appearance */
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* This helps control column widths */
+        }
+        
+        .table-container th, .table-container td {
+            padding: 0.5rem;
+            text-align: left;
+            vertical-align: middle;
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* Rating stars styling */
+        .text-yellow-400 {
+            color: #f59e0b; /* Amber/yellow color */
+        }
+        
+        .text-gray-300 {
+            color: #d1d5db; /* Light gray for empty stars */
+        }
+        
+        /* Update column widths to accommodate rating columns */
+        .table-container th:nth-child(1), .table-container td:nth-child(1) { 
+            width: 5%; /* ID column */
+        }
+        .table-container th:nth-child(2), .table-container td:nth-child(2) { 
+            width: 15%; /* Username column */
+        }
+        .table-container th:nth-child(3), .table-container td:nth-child(3) { 
+            width: 7%; /* Role column */
+            text-align: center;
+        }
+        /* Rating columns */
+        .table-container th:nth-child(4), .table-container td:nth-child(4),
+        .table-container th:nth-child(5), .table-container td:nth-child(5),
+        .table-container th:nth-child(6), .table-container td:nth-child(6) { 
+            width: 10%; /* Rating columns */
+        }
+        .table-container th:nth-child(7), .table-container td:nth-child(7) { 
+            width: 15%; /* Last Login column */
+        }
+        .table-container th:nth-child(8), .table-container td:nth-child(8) { 
+            width: 8%; /* Staff Status column */
+            text-align: center;
+        }
+        .table-container th:nth-child(9), .table-container td:nth-child(9) { 
+            width: 10%; /* Wallet Amount column */
+            text-align: right;
+        }
+        
+        /* Make table rows clickable and more visible */
+        .table-container tbody tr {
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+        
+        .table-container tbody tr:hover {
+            background-color: #f3f4f6 !important;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .table-container tbody tr.active {
+            background-color: #e5edff !important;
+        }
+        
+        /* Updated Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10vh auto;  /* Position 10% from the top */
+            padding: 20px;
+            border-radius: 0.5rem;
+            width: 50%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        
+        /* Prevent body scrolling when modal is open */
+        body.modal-open {
+            overflow: hidden;
+        }
+    </style>
+
+    <div class="table-container">
+        {% render_table table %}
+    </div>
+    
+    <!-- Modal for editing user -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Edit User</h2>
+            <div id="editUserForm">
+                <!-- Form content will be loaded via HTMX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Make sure we have a CSRF token for AJAX requests
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]') ? 
+                    document.querySelector('input[name="csrfmiddlewaretoken"]').value : '';
+    
+    // Add click event listeners to table rows when the DOM loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM loaded, initializing table row handlers");
+        initializeTableRowHandlers();
+    });
+    
+    // Function to initialize click handlers on table rows
+    function initializeTableRowHandlers() {
+        console.log("Initializing table row handlers");
+        const rows = document.querySelectorAll('.table-container tbody tr');
+        console.log(`Found ${rows.length} table rows`);
+        
+        rows.forEach(row => {
+            row.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log("Row clicked");
+                const userId = this.querySelector('td:first-child').textContent.trim();
+                console.log(`User ID: ${userId}`);
+                
+                if (userId && !isNaN(userId)) {
+                    openUserEditModal(userId);
+                } else {
+                    console.error("Invalid user ID:", userId);
+                }
+            });
+        });
+    }
+    
+    // Re-initialize handlers after HTMX refreshes the table
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        console.log("htmx:afterSwap event detected");
+        if (event.detail.target.classList.contains('table-container') || 
+            event.detail.target.querySelector('.table-container')) {
+            console.log("Table container was updated, reinitializing row handlers");
+            setTimeout(() => {
+                initializeTableRowHandlers();
+            }, 100);
+        }
+    });
+    
+    // Function to open the edit modal for a user
+    function openUserEditModal(userId) {
+        console.log(`Opening modal for user ID: ${userId}`);
+        // First reset the modal
+        closeModal();
+        
+        const modal = document.getElementById('editUserModal');
+        if (!modal) {
+            console.error("Modal element not found!");
+            return;
+        }
+        
+        // Set timeout to ensure the modal is reset before opening
+        setTimeout(() => {
+            console.log("Loading user data via HTMX");
+            // Make the AJAX request to load the form
+            htmx.ajax('GET', `/manage/edit-user/${userId}/`, {
+                target: '#editUserForm',
+                swap: 'innerHTML',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            
+            console.log("Displaying modal");
+            // Show the modal
+            modal.style.display = 'block';
+            document.body.classList.add('modal-open');
+        }, 100);
+    }
+    
+    // Function to close the modal
+    function closeModal() {
+        console.log("Closing modal");
+        const modal = document.getElementById('editUserModal');
+        if (!modal) return;
+        
+        modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+        
+        // Clear the form content
+        const formContainer = document.getElementById('editUserForm');
+        if (formContainer) {
+            formContainer.innerHTML = '';
+        }
+    }
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('editUserModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+    
+    // Function to refresh the users table
+    function refreshUserTable() {
+        console.log("Refreshing user table");
+        const tableContainer = document.querySelector('.table-container');
+        if (tableContainer) {
+            htmx.ajax('GET', '{% url "manage-users" %}', {
+                target: '.table-container',
+                swap: 'outerHTML',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+        }
+    }
+    
+    // Close modal when ESC key is pressed
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            document.getElementById('editUserModal').classList.add('hidden');
+        }
+    });
+</script>
+{% endblock %}
