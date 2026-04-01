@@ -651,7 +651,8 @@ def split_teams_balanced_view(request, session_id):
 
     # Sort by total score descending
     players.sort(
-        key=lambda u: float(u.batting_rating + u.bowling_rating + u.fielding_rating),
+        key=lambda u: float(u.batting_rating +
+                            u.bowling_rating + u.fielding_rating),
         reverse=True
     )
 
@@ -662,10 +663,12 @@ def split_teams_balanced_view(request, session_id):
         total = float(p.batting_rating + p.bowling_rating + p.fielding_rating)
         name = p.get_full_name() or p.username
         if score_a <= score_b:
-            team_a.append({'id': p.id, 'username': p.username, 'name': name, 'score': round(total, 1)})
+            team_a.append({'id': p.id, 'username': p.username,
+                          'name': name, 'score': round(total, 1)})
             score_a += total
         else:
-            team_b.append({'id': p.id, 'username': p.username, 'name': name, 'score': round(total, 1)})
+            team_b.append({'id': p.id, 'username': p.username,
+                          'name': name, 'score': round(total, 1)})
             score_b += total
 
     return JsonResponse({

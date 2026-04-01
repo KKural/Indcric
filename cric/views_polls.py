@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 from .models import Session, Poll, Vote, RatingPoll, RatingVote, User
 from .forms_polls import PollForm
 
+
 @login_required
 def poll_detail_view(request, poll_id):
     poll = get_object_or_404(Poll, id=poll_id)
@@ -18,7 +19,7 @@ def poll_detail_view(request, poll_id):
     if request.method == 'POST':
         if not poll.is_open:
             return HttpResponseForbidden("This poll is closed.")
-        
+
         choice = request.POST.get('choice')
         if choice in ['yes', 'no']:
             vote, created = Vote.objects.update_or_create(
@@ -31,7 +32,7 @@ def poll_detail_view(request, poll_id):
     yes_votes = poll.votes.filter(choice='yes').count()
     no_votes = poll.votes.filter(choice='no').count()
     total_votes = yes_votes + no_votes
-    
+
     context = {
         'poll': poll,
         'yes_votes': yes_votes,
@@ -41,6 +42,7 @@ def poll_detail_view(request, poll_id):
         'poll_url': request.build_absolute_uri(poll.get_absolute_url())
     }
     return render(request, 'cric/pages/poll_detail.html', context)
+
 
 @login_required
 def create_poll_view(request, session_id):
@@ -69,14 +71,16 @@ def create_poll_view(request, session_id):
 
 @login_required
 def rating_poll_list_view(request):
-    polls = RatingPoll.objects.select_related('player', 'created_by').order_by('-created_at')
+    polls = RatingPoll.objects.select_related(
+        'player', 'created_by').order_by('-created_at')
     return render(request, 'cric/pages/rating_poll_list.html', {'polls': polls})
 
 
 @login_required
 def rating_poll_detail_view(request, poll_id):
     poll = get_object_or_404(RatingPoll, pk=poll_id)
-    existing_vote = RatingVote.objects.filter(poll=poll, voter=request.user).first()
+    existing_vote = RatingVote.objects.filter(
+        poll=poll, voter=request.user).first()
     votes_count = poll.votes.count()
     context = {
         'poll': poll,
@@ -94,15 +98,19 @@ def vote_rating_poll_view(request, poll_id):
             messages.error(request, "This rating poll is closed.")
             return redirect('rating_poll_detail', poll_id=poll_id)
         try:
-            batting = min(max(Decimal(request.POST.get('batting', '5.0')), Decimal('1')), Decimal('10'))
-            bowling = min(max(Decimal(request.POST.get('bowling', '5.0')), Decimal('1')), Decimal('10'))
-            fielding = min(max(Decimal(request.POST.get('fielding', '5.0')), Decimal('1')), Decimal('10'))
+            batting = min(
+                max(Decimal(request.POST.get('batting', '5.0')), Decimal('1')), Decimal('10'))
+            bowling = min(
+                max(Decimal(request.POST.get('bowling', '5.0')), Decimal('1')), Decimal('10'))
+            fielding = min(
+                max(Decimal(request.POST.get('fielding', '5.0')), Decimal('1')), Decimal('10'))
         except (InvalidOperation, TypeError):
             messages.error(request, "Invalid rating values.")
             return redirect('rating_poll_detail', poll_id=poll_id)
         RatingVote.objects.update_or_create(
             poll=poll, voter=request.user,
-            defaults={'batting': batting, 'bowling': bowling, 'fielding': fielding}
+            defaults={'batting': batting,
+                      'bowling': bowling, 'fielding': fielding}
         )
         messages.success(request, "Your rating has been saved.")
     return redirect('rating_poll_detail', poll_id=poll_id)
@@ -111,7 +119,8 @@ def vote_rating_poll_view(request, poll_id):
 @login_required
 def close_rating_poll_view(request, poll_id):
     if not request.user.is_staff:
-        messages.error(request, "You don't have permission to perform this action.")
+        messages.error(
+            request, "You don't have permission to perform this action.")
         return redirect('rating_poll_list')
     poll = get_object_or_404(RatingPoll, pk=poll_id)
     if request.method == 'POST':
@@ -131,9 +140,11 @@ def close_rating_poll_view(request, poll_id):
                 player.bowling_rating = round(float(avg_bowl) * 2) / 2
                 player.fielding_rating = round(float(avg_field) * 2) / 2
                 player.save()
-                messages.success(request, f"Poll closed. Ratings updated: Bat {player.batting_rating}, Bowl {player.bowling_rating}, Field {player.fielding_rating}.")
+                messages.success(
+                    request, f"Poll closed. Ratings updated: Bat {player.batting_rating}, Bowl {player.bowling_rating}, Field {player.fielding_rating}.")
             else:
-                messages.warning(request, "Poll closed with no votes — ratings unchanged.")
+                messages.warning(
+                    request, "Poll closed with no votes — ratings unchanged.")
         else:
             poll.is_open = True
             poll.save()
@@ -144,11 +155,14 @@ def close_rating_poll_view(request, poll_id):
 @login_required
 def create_rating_poll_view(request, user_id):
     if not request.user.is_staff:
-        messages.error(request, "You don't have permission to perform this action.")
+        messages.error(
+            request, "You don't have permission to perform this action.")
         return redirect('manage-users')
     player = get_object_or_404(User, pk=user_id)
     if request.method == 'POST':
-        poll = RatingPoll.objects.create(player=player, created_by=request.user)
-        messages.success(request, f"Rating poll created for {player.get_full_name() or player.username}.")
+        poll = RatingPoll.objects.create(
+            player=player, created_by=request.user)
+        messages.success(
+            request, f"Rating poll created for {player.get_full_name() or player.username}.")
         return redirect('rating_poll_detail', poll_id=poll.id)
     return redirect('manage-users')

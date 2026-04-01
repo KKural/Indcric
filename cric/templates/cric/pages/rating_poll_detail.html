@@ -17,12 +17,14 @@
     </h1>
     <p class="text-sm text-gray-500 mb-6">
         {{ votes_count }} vote{{ votes_count|pluralize }} so far ·
-        Current: 🏏 {{ poll.player.batting_rating }} &nbsp;🎳 {{ poll.player.bowling_rating }} &nbsp;🧤 {{ poll.player.fielding_rating }}
+        Current: 🏏 {{ poll.player.batting_rating }} &nbsp;🎳 {{ poll.player.bowling_rating }} &nbsp;🧤 {{
+        poll.player.fielding_rating }}
     </p>
 
     {% if messages %}
     {% for msg in messages %}
-    <div class="mb-4 p-3 rounded {% if msg.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+    <div
+        class="mb-4 p-3 rounded {% if msg.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
         {{ msg }}
     </div>
     {% endfor %}
@@ -39,41 +41,47 @@
                 <div>
                     <div class="flex justify-between mb-1">
                         <label class="text-gray-700 text-sm font-medium" for="batting">🏏 Batting</label>
-                        <span class="text-indigo-600 font-bold text-sm" id="batting_disp">{% if existing_vote %}{{ existing_vote.batting }}{% else %}5.0{% endif %}</span>
+                        <span class="text-indigo-600 font-bold text-sm" id="batting_disp">{% if existing_vote %}{{
+                            existing_vote.batting }}{% else %}5.0{% endif %}</span>
                     </div>
                     <input type="range" id="batting" name="batting" min="1" max="10" step="0.5"
-                           value="{% if existing_vote %}{{ existing_vote.batting }}{% else %}5.0{% endif %}"
-                           class="w-full accent-indigo-600"
-                           oninput="document.getElementById('batting_disp').textContent = this.value">
-                    <div class="flex justify-between text-xs text-gray-400 mt-1"><span>1 Weak</span><span>10 Elite</span></div>
+                        value="{% if existing_vote %}{{ existing_vote.batting }}{% else %}5.0{% endif %}"
+                        class="w-full accent-indigo-600"
+                        oninput="document.getElementById('batting_disp').textContent = this.value">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1"><span>1 Weak</span><span>10
+                            Elite</span></div>
                 </div>
                 <!-- Bowling -->
                 <div>
                     <div class="flex justify-between mb-1">
                         <label class="text-gray-700 text-sm font-medium" for="bowling">🎳 Bowling</label>
-                        <span class="text-indigo-600 font-bold text-sm" id="bowling_disp">{% if existing_vote %}{{ existing_vote.bowling }}{% else %}5.0{% endif %}</span>
+                        <span class="text-indigo-600 font-bold text-sm" id="bowling_disp">{% if existing_vote %}{{
+                            existing_vote.bowling }}{% else %}5.0{% endif %}</span>
                     </div>
                     <input type="range" id="bowling" name="bowling" min="1" max="10" step="0.5"
-                           value="{% if existing_vote %}{{ existing_vote.bowling }}{% else %}5.0{% endif %}"
-                           class="w-full accent-indigo-600"
-                           oninput="document.getElementById('bowling_disp').textContent = this.value">
-                    <div class="flex justify-between text-xs text-gray-400 mt-1"><span>1 Weak</span><span>10 Elite</span></div>
+                        value="{% if existing_vote %}{{ existing_vote.bowling }}{% else %}5.0{% endif %}"
+                        class="w-full accent-indigo-600"
+                        oninput="document.getElementById('bowling_disp').textContent = this.value">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1"><span>1 Weak</span><span>10
+                            Elite</span></div>
                 </div>
                 <!-- Fielding -->
                 <div>
                     <div class="flex justify-between mb-1">
                         <label class="text-gray-700 text-sm font-medium" for="fielding">🧤 Fielding</label>
-                        <span class="text-indigo-600 font-bold text-sm" id="fielding_disp">{% if existing_vote %}{{ existing_vote.fielding }}{% else %}5.0{% endif %}</span>
+                        <span class="text-indigo-600 font-bold text-sm" id="fielding_disp">{% if existing_vote %}{{
+                            existing_vote.fielding }}{% else %}5.0{% endif %}</span>
                     </div>
                     <input type="range" id="fielding" name="fielding" min="1" max="10" step="0.5"
-                           value="{% if existing_vote %}{{ existing_vote.fielding }}{% else %}5.0{% endif %}"
-                           class="w-full accent-indigo-600"
-                           oninput="document.getElementById('fielding_disp').textContent = this.value">
-                    <div class="flex justify-between text-xs text-gray-400 mt-1"><span>1 Weak</span><span>10 Elite</span></div>
+                        value="{% if existing_vote %}{{ existing_vote.fielding }}{% else %}5.0{% endif %}"
+                        class="w-full accent-indigo-600"
+                        oninput="document.getElementById('fielding_disp').textContent = this.value">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1"><span>1 Weak</span><span>10
+                            Elite</span></div>
                 </div>
             </div>
             <button type="submit"
-                    class="mt-5 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded">
+                class="mt-5 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded">
                 {% if existing_vote %}Update My Rating{% else %}Submit Rating{% endif %}
             </button>
         </form>
@@ -86,7 +94,8 @@
     <div class="bg-gray-50 border rounded-lg p-4 mb-6 text-sm text-gray-600">
         This poll is closed. No more votes accepted.
         {% if existing_vote %}
-        <br>Your submitted rating — 🏏 {{ existing_vote.batting }} &nbsp;🎳 {{ existing_vote.bowling }} &nbsp;🧤 {{ existing_vote.fielding }}
+        <br>Your submitted rating — 🏏 {{ existing_vote.batting }} &nbsp;🎳 {{ existing_vote.bowling }} &nbsp;🧤 {{
+        existing_vote.fielding }}
         {% endif %}
     </div>
     {% endif %}
@@ -113,11 +122,11 @@
         <form method="POST" action="{% url 'close_rating_poll' poll.id %}">
             {% csrf_token %}
             <button type="submit"
-                    class="w-full {% if poll.is_open %}bg-red-500 hover:bg-red-600{% else %}bg-green-500 hover:bg-green-600{% endif %} text-white font-semibold py-2 px-4 rounded">
+                class="w-full {% if poll.is_open %}bg-red-500 hover:bg-red-600{% else %}bg-green-500 hover:bg-green-600{% endif %} text-white font-semibold py-2 px-4 rounded">
                 {% if poll.is_open %}
-                    Close Poll &amp; Save Ratings to Player
+                Close Poll &amp; Save Ratings to Player
                 {% else %}
-                    Re-open Poll
+                Re-open Poll
                 {% endif %}
             </button>
         </form>

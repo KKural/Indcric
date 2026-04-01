@@ -42,10 +42,14 @@ urlpatterns = [
 
     # Rating poll URLs
     path('rating-polls/', rating_poll_list_view, name='rating_poll_list'),
-    path('rating-polls/<int:poll_id>/', rating_poll_detail_view, name='rating_poll_detail'),
-    path('rating-polls/<int:poll_id>/vote/', vote_rating_poll_view, name='vote_rating_poll'),
-    path('rating-polls/<int:poll_id>/close/', close_rating_poll_view, name='close_rating_poll'),
-    path('rating-polls/create/<int:user_id>/', create_rating_poll_view, name='create_rating_poll'),
+    path('rating-polls/<int:poll_id>/',
+         rating_poll_detail_view, name='rating_poll_detail'),
+    path('rating-polls/<int:poll_id>/vote/',
+         vote_rating_poll_view, name='vote_rating_poll'),
+    path('rating-polls/<int:poll_id>/close/',
+         close_rating_poll_view, name='close_rating_poll'),
+    path('rating-polls/create/<int:user_id>/',
+         create_rating_poll_view, name='create_rating_poll'),
 
     # Profile URLs
     path('profile/', views_users.profile_view, name='profile'),
