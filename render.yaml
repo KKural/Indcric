@@ -1,9 +1,24 @@
+databases:
+  - name: indcric-db
+    plan: free
+    databaseName: indcric
+    user: indcric_user
+
 services:
   - type: web
     name: indcric-dev
     runtime: python
+    plan: free
     buildCommand: "./build.sh"
     startCommand: "gunicorn cric_core.wsgi:application --bind 0.0.0.0:$PORT --log-file -"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.1
+      - key: DATABASE_URL
+        fromDatabase:
+          name: indcric-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
