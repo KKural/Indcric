@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: indcric-dev
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn cric_core.wsgi:application --bind 0.0.0.0:$PORT --log-file -"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.1
