@@ -212,8 +212,8 @@
                             </h3>
                             <!-- prettier-ignore -->
                             <div id="team1-players"
-                                class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto"
-                                {% if user.is_staff %}ondrop="drop(event)" ondragover="allowDrop(event)"{% endif %}>
+                                class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto" {% if
+                                user.is_staff %}ondrop="drop(event)" ondragover="allowDrop(event)" {% endif %}>
                                 {% if team1 %}
                                 {% for player in team1_players %}
                                 <div class="bg-white p-2 rounded-md shadow-sm mb-2 {% if user.is_staff %}cursor-move{% endif %}"
@@ -251,8 +251,8 @@
                             </h3>
                             <!-- prettier-ignore -->
                             <div id="team2-players"
-                                class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto"
-                                {% if user.is_staff %}ondrop="drop(event)" ondragover="allowDrop(event)"{% endif %}>
+                                class="bg-gray-100 p-4 rounded-lg min-h-[300px] max-h-[600px] overflow-y-auto" {% if
+                                user.is_staff %}ondrop="drop(event)" ondragover="allowDrop(event)" {% endif %}>
                                 {% if team2 %}
                                 {% for player in team2_players %}
                                 <div class="bg-white p-2 rounded-md shadow-sm mb-2 {% if user.is_staff %}cursor-move{% endif %}"
