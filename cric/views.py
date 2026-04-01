@@ -352,18 +352,18 @@ def edit_user_view(request, user_id):
                 wallet_amount = Decimal(
                     wallet_amount) if wallet_amount else Decimal('0.00')
 
-                # Convert ratings to Decimal with valid bounds (0-5)
+                # Convert ratings to Decimal with valid bounds (1-10)
                 batting_rating = min(max(Decimal(
-                    batting_rating if batting_rating else '2.5'), Decimal('0')), Decimal('5'))
+                    batting_rating if batting_rating else '5.0'), Decimal('1')), Decimal('10'))
                 bowling_rating = min(max(Decimal(
-                    bowling_rating if bowling_rating else '2.5'), Decimal('0')), Decimal('5'))
+                    bowling_rating if bowling_rating else '5.0'), Decimal('1')), Decimal('10'))
                 fielding_rating = min(max(Decimal(
-                    fielding_rating if fielding_rating else '2.5'), Decimal('0')), Decimal('5'))
+                    fielding_rating if fielding_rating else '5.0'), Decimal('1')), Decimal('10'))
             except (ValueError, TypeError, InvalidOperation):
                 wallet_amount = Decimal('0.00')
-                batting_rating = Decimal('2.5')
-                bowling_rating = Decimal('2.5')
-                fielding_rating = Decimal('2.5')
+                batting_rating = Decimal('5.0')
+                bowling_rating = Decimal('5.0')
+                fielding_rating = Decimal('5.0')
 
             # Update user data
             user.username = username
@@ -644,12 +644,17 @@ def create_user_view(request):
 
     if request.method == 'POST':
         username = request.POST.get('username')
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
         email = request.POST.get('email')
         password = request.POST.get('password')
         role = request.POST.get('role', 'batsman')
         is_staff = request.POST.get('is_staff') == 'on'
         is_superuser = request.POST.get('is_superuser') == 'on'
         wallet_amount = request.POST.get('wallet_amount', '0.00')
+        batting_rating = request.POST.get('batting_rating', '5.0')
+        bowling_rating = request.POST.get('bowling_rating', '5.0')
+        fielding_rating = request.POST.get('fielding_rating', '5.0')
 
         # Validate inputs
         if not username or not password:
@@ -661,23 +666,43 @@ def create_user_view(request):
             messages.error(request, f"User '{username}' already exists.")
             return render(request, 'cric/pages/create_user_form.html', {
                 'username': username,
+                'first_name': first_name,
+                'last_name': last_name,
                 'email': email,
                 'role': role,
                 'is_staff': is_staff,
                 'is_superuser': is_superuser,
-                'wallet_amount': wallet_amount
+                'wallet_amount': wallet_amount,
+                'batting_rating': batting_rating,
+                'bowling_rating': bowling_rating,
+                'fielding_rating': fielding_rating,
             })
+
+        try:
+            batting_rating = min(
+                max(Decimal(batting_rating), Decimal('1')), Decimal('10'))
+            bowling_rating = min(
+                max(Decimal(bowling_rating), Decimal('1')), Decimal('10'))
+            fielding_rating = min(
+                max(Decimal(fielding_rating), Decimal('1')), Decimal('10'))
+        except (ValueError, InvalidOperation):
+            batting_rating = bowling_rating = fielding_rating = Decimal('5.0')
 
         try:
             # Create new user
             user = User.objects.create_user(
                 username=username,
                 email=email,
-                password=password
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
             )
             user.role = role
             user.is_staff = is_staff
             user.is_superuser = is_superuser
+            user.batting_rating = batting_rating
+            user.bowling_rating = bowling_rating
+            user.fielding_rating = fielding_rating
             user.save()
 
             # Create wallet if amount provided
@@ -696,11 +721,16 @@ def create_user_view(request):
             messages.error(request, f"Error creating user: {str(e)}")
             return render(request, 'cric/pages/create_user_form.html', {
                 'username': username,
+                'first_name': first_name,
+                'last_name': last_name,
                 'email': email,
                 'role': role,
                 'is_staff': is_staff,
                 'is_superuser': is_superuser,
-                'wallet_amount': wallet_amount
+                'wallet_amount': wallet_amount,
+                'batting_rating': batting_rating,
+                'bowling_rating': bowling_rating,
+                'fielding_rating': fielding_rating,
             })
 
     # GET request - show the form

@@ -6,7 +6,8 @@ from .models import User, Session, Match, Team, Attendance, Payment, SessionPlay
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     ordering = ['first_name', 'last_name', 'username']
-    list_display = ['get_display_name', 'username', 'email', 'role', 'is_active', 'is_staff']
+    list_display = ['get_display_name', 'username',
+                    'email', 'role', 'is_active', 'is_staff']
     search_fields = ['first_name', 'last_name', 'username', 'email']
 
     @admin.display(description='Name', ordering='first_name')
