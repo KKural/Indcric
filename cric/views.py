@@ -680,11 +680,9 @@ def split_teams_balanced_view(request, session_id):
 
 
 @login_required
+@login_required
 def toss_view(request, session_id):
     """Perform a coin toss for a session and save/return the result."""
-    if not request.user.is_staff:
-        return JsonResponse({'error': 'Permission denied'}, status=403)
-
     if request.method == 'POST':
         session = get_object_or_404(Session, pk=session_id)
         result = random.choice(['heads', 'tails'])

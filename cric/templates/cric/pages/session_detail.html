@@ -31,6 +31,13 @@
         </div>
     </div>
 
+    <!-- ====== TAB NAV ====== -->
+    <div class="flex border-b border-gray-200 mb-6">
+        <button id="tab-session-btn" onclick="switchTab('session')" class="gcc-tab-btn active">Session &amp; Teams</button>
+        <button id="tab-toss-btn" onclick="switchTab('toss')" class="gcc-tab-btn">&#127922; Coin Toss</button>
+    </div>
+
+    <div id="tab-session-content">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Session Voting Card -->
         <div class="lg:col-span-1">
@@ -110,19 +117,7 @@
                 <div class="px-6 py-4">
                     <h3 class="text-lg font-semibold mb-2">Admin Controls</h3>
                     <div class="space-y-2">
-                        <!-- Toss -->
-                        <div class="bg-gray-50 rounded p-3 mb-1">
-                            <p class="text-sm font-medium text-gray-700 mb-1">🪙 Coin Toss
-                                {% if session.toss_result %}
-                                — <span class="font-bold text-indigo-700 capitalize">{{ session.toss_result }}</span>
-                                {% endif %}
-                            </p>
-                            <button id="toss-btn" onclick="doToss()"
-                                class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded text-sm font-semibold">
-                                {% if session.toss_result %}Toss Again{% else %}Flip Coin{% endif %}
-                            </button>
-                            <p id="toss-result-display" class="text-center text-lg font-bold mt-2 hidden"></p>
-                        </div>
+
                         {% if session.poll %}
                         <form method="POST" action="{% url 'close_poll' session.poll.id %}">
                             {% csrf_token %}
@@ -253,8 +248,7 @@
                                 <!-- Team 2 -->
                                 <div class="w-full {% if user.is_staff %}md:w-1/3{% else %}md:w-1/2{% endif %}">
                                     <h3 class="text-lg font-semibold mb-2">
-                                        <span id="team2-name">{% if team2 %}{{ team2.name }}{% else %}Team 2{% endif
-                                            %}</span>
+                                        <span id="team2-name">{% if team2 %}{{ team2.name }}{% else %}Team 2{% endif %}</span>
                                         {% if user.is_staff %}
                                         <button type="button" onclick="editTeamName('team2')"
                                             class="edit-button">Edit</button>
@@ -329,6 +323,60 @@
                     </div>
                 </div>
 
+    </div><!-- /tab-session-content -->
+
+    <!-- ====== COIN TOSS TAB ====== -->
+    <div id="tab-toss-content" class="hidden">
+        <div class="max-w-md mx-auto py-10">
+            <div class="bg-white shadow-lg rounded-2xl p-8 text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">Gent Cricket Club</h2>
+                <p class="text-gray-400 text-xs tracking-widest uppercase mb-4">Coin Toss</p>
+                <span id="toss-tab-result" class="inline-block text-xl font-bold text-indigo-700 min-h-[28px]{% if not session.toss_result %} invisible{% endif %}">
+                    {% if session.toss_result %}{% if session.toss_result == 'heads' %}&#128081; Heads!{% else %}&#128308; Tails!{% endif %}{% else %}&mdash;{% endif %}
+                </span>
+                <!-- 3D GCC Coin -->
+                <div style="width:160px;height:160px;perspective:600px;margin:16px auto 24px auto;">
+                    <div id="gcc-coin" class="gcc-coin" data-last="{{ session.toss_result|default:'' }}">
+                        <!-- HEADS: Gold + stumps -->
+                        <div class="gcc-coin-face gcc-heads">
+                            <span style="font-size:1.9rem;font-weight:900;letter-spacing:2px;color:#7a4800;">GCC</span>
+                            <span style="font-size:0.52rem;letter-spacing:3px;color:#a06010;text-transform:uppercase;margin-top:1px;">Gent Cricket</span>
+                            <svg width="46" height="26" viewBox="0 0 46 26" style="margin-top:5px" fill="none">
+                                <rect x="3" y="0" width="5" height="20" rx="2.5" fill="#7a4800"/>
+                                <rect x="20" y="0" width="5" height="20" rx="2.5" fill="#7a4800"/>
+                                <rect x="37" y="0" width="5" height="20" rx="2.5" fill="#7a4800"/>
+                                <ellipse cx="5.5" cy="0.5" rx="3.5" ry="1.5" fill="#c8900a"/>
+                                <ellipse cx="22.5" cy="0.5" rx="3.5" ry="1.5" fill="#c8900a"/>
+                                <ellipse cx="39.5" cy="0.5" rx="3.5" ry="1.5" fill="#c8900a"/>
+                                <rect x="0" y="21" width="46" height="4" rx="2" fill="#5a3400"/>
+                            </svg>
+                            <span style="font-size:0.48rem;letter-spacing:3px;color:#a06010;text-transform:uppercase;margin-top:5px;">HEADS</span>
+                        </div>
+                        <!-- TAILS: Blue + cricket ball -->
+                        <div class="gcc-coin-face gcc-tails">
+                            <span style="font-size:1.9rem;font-weight:900;letter-spacing:2px;color:#1a3a70;">GCC</span>
+                            <span style="font-size:0.52rem;letter-spacing:3px;color:#2d5fa0;text-transform:uppercase;margin-top:1px;">Gent Cricket</span>
+                            <svg width="38" height="38" viewBox="0 0 38 38" style="margin-top:6px">
+                                <circle cx="19" cy="19" r="17" fill="#c0392b" stroke="#7b241c" stroke-width="1.5"/>
+                                <path d="M5,15 Q19,8 33,15" stroke="white" stroke-width="1.5" fill="none"/>
+                                <path d="M5,23 Q19,30 33,23" stroke="white" stroke-width="1.5" fill="none"/>
+                                <path d="M15,3 Q11,19 15,35" stroke="white" stroke-width="1.5" fill="none"/>
+                                <path d="M23,3 Q27,19 23,35" stroke="white" stroke-width="1.5" fill="none"/>
+                            </svg>
+                            <span style="font-size:0.48rem;letter-spacing:3px;color:#2d5fa0;text-transform:uppercase;margin-top:4px;">TAILS</span>
+                        </div>
+                    </div>
+                </div>
+                <button id="toss-tab-btn" onclick="doTossTab()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-10 rounded-full text-base shadow transition-all">
+                    {% if session.toss_result %}Flip Again{% else %}Flip Coin{% endif %}
+                </button>
+                <p class="text-xs text-gray-400 mt-4">Anyone can flip &mdash; result is saved for the session</p>
+                <form id="toss-csrf-form" style="display:none">{% csrf_token %}</form>
+            </div>
+        </div>
+    </div>
+
                 <style>
                     .edit-button {
                         background-color: transparent;
@@ -358,6 +406,52 @@
                         margin-left: 4px;
                         vertical-align: middle;
                     }
+                    /* === GCC Coin === */
+                    .gcc-coin {
+                        width: 160px; height: 160px;
+                        position: relative;
+                        transform-style: preserve-3d;
+                    }
+                    .gcc-coin-face {
+                        position: absolute; width: 100%; height: 100%;
+                        border-radius: 50%;
+                        backface-visibility: hidden;
+                        -webkit-backface-visibility: hidden;
+                        display: flex; flex-direction: column;
+                        align-items: center; justify-content: center;
+                        box-shadow: 0 4px 18px rgba(0,0,0,0.22), inset 0 2px 8px rgba(255,255,255,0.28);
+                    }
+                    .gcc-heads {
+                        background: radial-gradient(circle at 35% 35%, #ffe082, #c8900a 58%, #8b5e03);
+                        border: 5px solid #c8900a;
+                    }
+                    .gcc-tails {
+                        background: radial-gradient(circle at 35% 35%, #90caf9, #1565c0 58%, #0d3572);
+                        border: 5px solid #1565c0;
+                        transform: rotateY(180deg);
+                    }
+                    @keyframes gcc-flip-heads {
+                        0%   { transform: rotateY(0deg); }
+                        100% { transform: rotateY(1440deg); }
+                    }
+                    @keyframes gcc-flip-tails {
+                        0%   { transform: rotateY(0deg); }
+                        100% { transform: rotateY(1620deg); }
+                    }
+                    /* === Tab nav === */
+                    .gcc-tab-btn {
+                        padding: 10px 24px;
+                        font-weight: 600;
+                        font-size: 0.875rem;
+                        border-bottom: 2px solid transparent;
+                        color: #6b7280;
+                        transition: color 0.15s, border-color 0.15s;
+                        cursor: pointer;
+                        background: none;
+                        border-top: none; border-left: none; border-right: none;
+                    }
+                    .gcc-tab-btn:hover { color: #4338ca; }
+                    .gcc-tab-btn.active { border-bottom-color: #4338ca; color: #4338ca; }
                 </style>
 
                 {% if user.is_staff %}
@@ -669,4 +763,77 @@
                     }
                 </script>
                 {% endif %}
+                <script>
+                    function switchTab(tab) {
+                        const sessionContent = document.getElementById('tab-session-content');
+                        const tossContent = document.getElementById('tab-toss-content');
+                        const sessionBtn = document.getElementById('tab-session-btn');
+                        const tossBtn = document.getElementById('tab-toss-btn');
+                        if (tab === 'session') {
+                            sessionContent.classList.remove('hidden');
+                            tossContent.classList.add('hidden');
+                            sessionBtn.classList.add('active');
+                            tossBtn.classList.remove('active');
+                        } else {
+                            sessionContent.classList.add('hidden');
+                            tossContent.classList.remove('hidden');
+                            tossBtn.classList.add('active');
+                            sessionBtn.classList.remove('active');
+                        }
+                    }
+
+                    function doTossTab() {
+                        const btn = document.getElementById('toss-tab-btn');
+                        const resultEl = document.getElementById('toss-tab-result');
+                        const coin = document.getElementById('gcc-coin');
+                        btn.textContent = 'Flipping\u2026';
+                        btn.disabled = true;
+                        // Reset to neutral (heads face)
+                        coin.style.transition = 'none';
+                        coin.style.animation = 'none';
+                        coin.style.transform = 'rotateY(0deg)';
+                        void coin.offsetWidth;
+                        const csrfInput = document.querySelector('#toss-csrf-form [name=csrfmiddlewaretoken]');
+                        const token = csrfInput ? csrfInput.value : '';
+                        fetch("{% url 'toss' session.id %}", {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': token, 'Content-Type': 'application/json' }
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.error) {
+                                btn.textContent = 'Flip Coin';
+                                btn.disabled = false;
+                                alert(data.error);
+                                return;
+                            }
+                            const isHeads = data.result === 'heads';
+                            coin.style.animation = isHeads
+                                ? 'gcc-flip-heads 1.4s cubic-bezier(0.4,0,0.2,1) forwards'
+                                : 'gcc-flip-tails 1.4s cubic-bezier(0.4,0,0.2,1) forwards';
+                            setTimeout(() => {
+                                coin.style.animation = 'none';
+                                coin.style.transform = isHeads ? 'rotateY(0deg)' : 'rotateY(180deg)';
+                                const emoji = isHeads ? '\u{1F451}' : '\u{1F534}';
+                                resultEl.textContent = emoji + ' ' + (isHeads ? 'Heads!' : 'Tails!');
+                                resultEl.style.visibility = 'visible';
+                                btn.textContent = 'Flip Again';
+                                btn.disabled = false;
+                            }, 1500);
+                        })
+                        .catch(() => {
+                            btn.textContent = 'Flip Coin';
+                            btn.disabled = false;
+                            alert('Network error \u2014 please try again.');
+                        });
+                    }
+
+                    // On load: show correct coin face based on last result
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const coin = document.getElementById('gcc-coin');
+                        if (coin && coin.dataset.last === 'tails') {
+                            coin.style.transform = 'rotateY(180deg)';
+                        }
+                    });
+                </script>
                 {% endblock %}
