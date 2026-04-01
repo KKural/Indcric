@@ -26,12 +26,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-v@v8d$*(-5sso_wrjp(_tl7o3ao(_q98*c&0d4o3c5vbwxhbj%")
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "django-insecure-v@v8d$*(-5sso_wrjp(_tl7o3ao(_q98*c&0d4o3c5vbwxhbj%")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = ['icg-club.azurewebsites.net', 'localhost', '127.0.0.1', '.onrender.com']
+ALLOWED_HOSTS = ['icg-club.azurewebsites.net',
+                 'localhost', '127.0.0.1', '.onrender.com']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://icg-club.azurewebsites.net',
@@ -56,21 +58,23 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     # 'allauth.socialaccount',
-    
+
     "cric",
 ]
-SITE_ID = 1 
+SITE_ID = 1
 
-LOGIN_REDIRECT_URL = '/' 
+LOGIN_REDIRECT_URL = '/'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add this line after SecurityMiddleware
+    # Add this line after SecurityMiddleware
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",  # Ensure this line is present
+    # Ensure this line is present
+    "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'allauth.account.middleware.AccountMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
@@ -86,8 +90,10 @@ ROOT_URLCONF = "cric_core.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],  # include your custom templates folder if needed
-        'APP_DIRS': True,  # ensures app templates (like cric_manage) are detected
+        # include your custom templates folder if needed
+        'DIRS': [BASE_DIR / "templates"],
+        # ensures app templates (like cric_manage) are detected
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 "django.template.context_processors.debug",
@@ -105,10 +111,12 @@ WSGI_APPLICATION = "cric_core.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-required_vars = ["db_hostname", "db_databasename", "db_username", "db_password"]
+required_vars = ["db_hostname", "db_databasename",
+                 "db_username", "db_password"]
 missing = [var for var in required_vars if not os.getenv(var)]
 # Only raise if no other DB config method is available
-_has_db_url = os.environ.get('DATABASE_URL') or os.environ.get('CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING')
+_has_db_url = os.environ.get('DATABASE_URL') or os.environ.get(
+    'CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING')
 if missing and not DEBUG and not _has_db_url:
     raise Exception(f"Missing environment variables: {', '.join(missing)}")
 
@@ -127,7 +135,8 @@ if DATABASE_URL:
     # Optionally override schema via DATABASE_SCHEMA env var
     db_schema = os.environ.get('DATABASE_SCHEMA')
     if db_schema:
-        DATABASES['default']['OPTIONS'] = {'options': f'-c search_path={db_schema},public'}
+        DATABASES['default']['OPTIONS'] = {
+            'options': f'-c search_path={db_schema},public'}
 
 elif AZURE_DB_URL:
     logger.info("Using Azure connection string for database configuration")
@@ -135,11 +144,13 @@ elif AZURE_DB_URL:
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-    DATABASES['default']['OPTIONS'] = {'options': '-c search_path=django_schema,public'}
-    
+    DATABASES['default']['OPTIONS'] = {
+        'options': '-c search_path=django_schema,public'}
+
 # Fall back to individual environment variables if available
 elif os.getenv("db_hostname") and os.getenv("db_databasename") and os.getenv("db_username") and os.getenv("db_password"):
-    logger.info("Using individual environment variables for database configuration")
+    logger.info(
+        "Using individual environment variables for database configuration")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -153,7 +164,7 @@ elif os.getenv("db_hostname") and os.getenv("db_databasename") and os.getenv("db
             }
         }
     }
-    
+
 # Last resort: use local configuration
 else:
     logger.info("Using local database configuration")
@@ -161,7 +172,7 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': 'indcric_db',
-            'USER': 'indcric_user', 
+            'USER': 'indcric_user',
             'PASSWORD': 'indcric_password',
             'HOST': '127.0.0.1',
             'PORT': '5432',
@@ -214,12 +225,14 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Add whitenoise for efficient static file serving on Azure
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add this line after SecurityMiddleware
+    # Add this line after SecurityMiddleware
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",  # Ensure this line is present
+    # Ensure this line is present
+    "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'allauth.account.middleware.AccountMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
@@ -261,7 +274,7 @@ LOGGING = {
             'handlers': [
                 'console',
                 # 'file'
-                ],
+            ],
             'level': 'INFO',
             'propagate': True,
         },
