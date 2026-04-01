@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-10">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Player Rating Polls</h1>
+        {% if user.is_staff %}
+        <a href="{% url 'manage-users' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded">
+            ＋ Create Poll (via Player List)
+        </a>
+        {% endif %}
+    </div>
+
+    {% if polls %}
+    <div class="space-y-3">
+        {% for poll in polls %}
+        <a href="{% url 'rating_poll_detail' poll.id %}"
+           class="block bg-white rounded-lg shadow p-4 hover:shadow-md transition">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="font-semibold text-gray-800">
+                        {{ poll.player.get_full_name|default:poll.player.username }}
+                        <span class="text-gray-400 text-sm ml-1">@{{ poll.player.username }}</span>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Created {{ poll.created_at|date:"d M Y" }}
+                        {% if poll.created_by %} by {{ poll.created_by.get_full_name|default:poll.created_by.username }}{% endif %}
+                        · {{ poll.votes.count }} vote{{ poll.votes.count|pluralize }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Current ratings — 🏏 {{ poll.player.batting_rating }}
+                        &nbsp;🎳 {{ poll.player.bowling_rating }}
+                        &nbsp;🧤 {{ poll.player.fielding_rating }}
+                    </p>
+                </div>
+                <span class="text-xs font-bold px-3 py-1 rounded-full
+                    {% if poll.is_open %}bg-green-100 text-green-700{% else %}bg-gray-200 text-gray-600{% endif %}">
+                    {% if poll.is_open %}Open{% else %}Closed{% endif %}
+                </span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500">No rating polls yet. Admins can create one from the <a href="{% url 'manage-users' %}" class="text-indigo-600 underline">Player List</a>.</p>
+    {% endif %}
+</div>
+{% endblock %}

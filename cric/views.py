@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from django.http import JsonResponse
 from .models import Match, Team, SessionPlayer, Attendance, Payment, Session, Poll, Vote
 from django.utils import timezone
 from django.contrib import messages
 from decimal import Decimal, InvalidOperation
+import random
 
 from django_tables2 import SingleTableMixin
 from django_filters.views import FilterView
@@ -632,6 +634,62 @@ def save_teams_view(request, session_id):
         messages.success(request, "Teams saved successfully!")
 
     return redirect('session_detail', session_id=session_id)
+
+
+@login_required
+def split_teams_balanced_view(request, session_id):
+    """Return a balanced team split based on player ratings (greedy algorithm)."""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    session = get_object_or_404(Session, pk=session_id)
+    if not hasattr(session, 'poll'):
+        return JsonResponse({'error': 'No poll found for this session'}, status=400)
+
+    yes_votes = session.poll.votes.filter(choice='yes').select_related('user')
+    players = [v.user for v in yes_votes]
+
+    # Sort by total score descending
+    players.sort(
+        key=lambda u: float(u.batting_rating + u.bowling_rating + u.fielding_rating),
+        reverse=True
+    )
+
+    # Greedy balance: assign each player to the team with the lower running total
+    team_a, team_b = [], []
+    score_a, score_b = 0.0, 0.0
+    for p in players:
+        total = float(p.batting_rating + p.bowling_rating + p.fielding_rating)
+        name = p.get_full_name() or p.username
+        if score_a <= score_b:
+            team_a.append({'id': p.id, 'username': p.username, 'name': name, 'score': round(total, 1)})
+            score_a += total
+        else:
+            team_b.append({'id': p.id, 'username': p.username, 'name': name, 'score': round(total, 1)})
+            score_b += total
+
+    return JsonResponse({
+        'team_a': team_a,
+        'team_b': team_b,
+        'score_a': round(score_a, 1),
+        'score_b': round(score_b, 1),
+    })
+
+
+@login_required
+def toss_view(request, session_id):
+    """Perform a coin toss for a session and save/return the result."""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    if request.method == 'POST':
+        session = get_object_or_404(Session, pk=session_id)
+        result = random.choice(['heads', 'tails'])
+        session.toss_result = result
+        session.save()
+        return JsonResponse({'result': result})
+
+    return JsonResponse({'error': 'POST required'}, status=405)
 
 
 @login_required

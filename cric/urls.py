@@ -4,7 +4,12 @@ from . import views_users
 from .views import UsersHtmxTableView, create_session_view, attendance_view, match_attendance_detail_view
 from .views import payments_view, manage_users, edit_user_view, create_user_view, delete_session_view, delete_user_view
 from .views import session_detail_view, vote_session_view, close_poll_view, save_teams_view, delete_session_view
-from .views_polls import poll_detail_view, create_poll_view
+from .views import split_teams_balanced_view, toss_view
+from .views_polls import (
+    poll_detail_view, create_poll_view,
+    rating_poll_list_view, rating_poll_detail_view,
+    vote_rating_poll_view, close_rating_poll_view, create_rating_poll_view,
+)
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -19,6 +24,10 @@ urlpatterns = [
          create_poll_view, name='create_poll'),
     path('session/<int:session_id>/save-teams/',
          save_teams_view, name='save_teams'),
+    path('session/<int:session_id>/split-teams/',
+         split_teams_balanced_view, name='split_teams_balanced'),
+    path('session/<int:session_id>/toss/',
+         toss_view, name='toss'),
     path('attendance/', attendance_view, name='attendance_list'),
     path('attendance/match/<int:match_id>/',
          match_attendance_detail_view, name='match_attendance_detail'),
@@ -30,6 +39,13 @@ urlpatterns = [
     path('users/create/', create_user_view, name='create_user'),
     path('users/delete/<int:user_id>/', delete_user_view, name='delete_user'),
     path('users/table/', UsersHtmxTableView.as_view(), name='users_table'),
+
+    # Rating poll URLs
+    path('rating-polls/', rating_poll_list_view, name='rating_poll_list'),
+    path('rating-polls/<int:poll_id>/', rating_poll_detail_view, name='rating_poll_detail'),
+    path('rating-polls/<int:poll_id>/vote/', vote_rating_poll_view, name='vote_rating_poll'),
+    path('rating-polls/<int:poll_id>/close/', close_rating_poll_view, name='close_rating_poll'),
+    path('rating-polls/create/<int:user_id>/', create_rating_poll_view, name='create_rating_poll'),
 
     # Profile URLs
     path('profile/', views_users.profile_view, name='profile'),

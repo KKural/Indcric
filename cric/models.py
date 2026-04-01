@@ -97,6 +97,12 @@ class Session(models.Model):
     cost_per_person = models.DecimalField(
         max_digits=5, decimal_places=2, null=True, blank=True)
     attendance_confirmed = models.BooleanField(default=False)
+    toss_result = models.CharField(
+        max_length=10,
+        choices=[('heads', 'Heads'), ('tails', 'Tails')],
+        null=True,
+        blank=True
+    )
     created_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -173,3 +179,38 @@ class Player(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
+class RatingPoll(models.Model):
+    """A poll for rating a specific player's batting, bowling, and fielding."""
+    player = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='rating_polls')
+    is_open = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_rating_polls')
+
+    def __str__(self):
+        return f"Rating poll for {self.player.get_full_name() or self.player.username}"
+
+
+class RatingVote(models.Model):
+    """A single voter's rating for a player in a RatingPoll."""
+    poll = models.ForeignKey(
+        RatingPoll, on_delete=models.CASCADE, related_name='votes')
+    voter = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='rating_votes')
+    batting = models.DecimalField(
+        max_digits=4, decimal_places=1,
+        validators=[MinValueValidator(1), MaxValueValidator(10)])
+    bowling = models.DecimalField(
+        max_digits=4, decimal_places=1,
+        validators=[MinValueValidator(1), MaxValueValidator(10)])
+    fielding = models.DecimalField(
+        max_digits=4, decimal_places=1,
+        validators=[MinValueValidator(1), MaxValueValidator(10)])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('poll', 'voter')

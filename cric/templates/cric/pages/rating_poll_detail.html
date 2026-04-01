@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-10">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'rating_poll_list' %}" class="text-gray-400 hover:text-gray-600 text-sm">← All Polls</a>
+        <span class="text-gray-300">|</span>
+        <span class="text-xs font-bold px-3 py-1 rounded-full
+            {% if poll.is_open %}bg-green-100 text-green-700{% else %}bg-gray-200 text-gray-600{% endif %}">
+            {% if poll.is_open %}Open{% else %}Closed{% endif %}
+        </span>
+    </div>
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-1">
+        Rate {{ poll.player.get_full_name|default:poll.player.username }}
+    </h1>
+    <p class="text-sm text-gray-500 mb-6">
+        {{ votes_count }} vote{{ votes_count|pluralize }} so far ·
+        Current: 🏏 {{ poll.player.batting_rating }} &nbsp;🎳 {{ poll.player.bowling_rating }} &nbsp;🧤 {{ poll.player.fielding_rating }}
+    </p>
+
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="mb-4 p-3 rounded {% if msg.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+        {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Voting form -->
+    {% if poll.is_open and poll.player != user %}
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
+        <h2 class="font-semibold text-gray-700 mb-4">Your Rating</h2>
+        <form method="POST" action="{% url 'vote_rating_poll' poll.id %}">
+            {% csrf_token %}
+            <div class="space-y-5">
+                <!-- Batting -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-gray-700 text-sm font-medium" for="batting">🏏 Batting</label>
+                        <span class="text-indigo-600 font-bold text-sm" id="batting_disp">{% if existing_vote %}{{ existing_vote.batting }}{% else %}5.0{% endif %}</span>
+                    </div>
+                    <input type="range" id="batting" name="batting" min="1" max="10" step="0.5"
+                           value="{% if existing_vote %}{{ existing_vote.batting }}{% else %}5.0{% endif %}"
+                           class="w-full accent-indigo-600"
+                           oninput="document.getElementById('batting_disp').textContent = this.value">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1"><span>1 Weak</span><span>10 Elite</span></div>
+                </div>
+                <!-- Bowling -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-gray-700 text-sm font-medium" for="bowling">🎳 Bowling</label>
+                        <span class="text-indigo-600 font-bold text-sm" id="bowling_disp">{% if existing_vote %}{{ existing_vote.bowling }}{% else %}5.0{% endif %}</span>
+                    </div>
+                    <input type="range" id="bowling" name="bowling" min="1" max="10" step="0.5"
+                           value="{% if existing_vote %}{{ existing_vote.bowling }}{% else %}5.0{% endif %}"
+                           class="w-full accent-indigo-600"
+                           oninput="document.getElementById('bowling_disp').textContent = this.value">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1"><span>1 Weak</span><span>10 Elite</span></div>
+                </div>
+                <!-- Fielding -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-gray-700 text-sm font-medium" for="fielding">🧤 Fielding</label>
+                        <span class="text-indigo-600 font-bold text-sm" id="fielding_disp">{% if existing_vote %}{{ existing_vote.fielding }}{% else %}5.0{% endif %}</span>
+                    </div>
+                    <input type="range" id="fielding" name="fielding" min="1" max="10" step="0.5"
+                           value="{% if existing_vote %}{{ existing_vote.fielding }}{% else %}5.0{% endif %}"
+                           class="w-full accent-indigo-600"
+                           oninput="document.getElementById('fielding_disp').textContent = this.value">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1"><span>1 Weak</span><span>10 Elite</span></div>
+                </div>
+            </div>
+            <button type="submit"
+                    class="mt-5 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded">
+                {% if existing_vote %}Update My Rating{% else %}Submit Rating{% endif %}
+            </button>
+        </form>
+    </div>
+    {% elif poll.player == user %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-sm text-yellow-800">
+        You cannot rate yourself.
+    </div>
+    {% else %}
+    <div class="bg-gray-50 border rounded-lg p-4 mb-6 text-sm text-gray-600">
+        This poll is closed. No more votes accepted.
+        {% if existing_vote %}
+        <br>Your submitted rating — 🏏 {{ existing_vote.batting }} &nbsp;🎳 {{ existing_vote.bowling }} &nbsp;🧤 {{ existing_vote.fielding }}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Vote summary -->
+    {% if votes_count > 0 %}
+    <div class="bg-white shadow rounded-lg p-5 mb-6">
+        <h2 class="font-semibold text-gray-700 mb-3">Vote Summary ({{ votes_count }} voters)</h2>
+        <div class="space-y-2">
+            {% for vote in poll.votes.all %}
+            <div class="flex justify-between text-sm text-gray-600 border-b pb-2">
+                <span>{{ vote.voter.get_full_name|default:vote.voter.username }}</span>
+                <span>🏏 {{ vote.batting }} &nbsp;🎳 {{ vote.bowling }} &nbsp;🧤 {{ vote.fielding }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Admin controls -->
+    {% if user.is_staff %}
+    <div class="bg-white shadow rounded-lg p-5">
+        <h2 class="font-semibold text-gray-700 mb-3">Admin Controls</h2>
+        <form method="POST" action="{% url 'close_rating_poll' poll.id %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="w-full {% if poll.is_open %}bg-red-500 hover:bg-red-600{% else %}bg-green-500 hover:bg-green-600{% endif %} text-white font-semibold py-2 px-4 rounded">
+                {% if poll.is_open %}
+                    Close Poll &amp; Save Ratings to Player
+                {% else %}
+                    Re-open Poll
+                {% endif %}
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

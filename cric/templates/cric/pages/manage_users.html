@@ -108,6 +108,12 @@
                                 onclick="document.getElementById('modalOverlay').classList.remove('hidden');">
                             Edit
                         </button>
+                        <form method="POST" action="{% url 'cric:create_rating_poll' user.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-yellow-600 hover:text-yellow-800 mr-4 font-medium" title="Start a rating poll for this player">
+                                ⭐ Rate
+                            </button>
+                        </form>
                         {% if not user.is_superuser and user != request.user %}
                         <button onclick="confirmDelete('{% url 'cric:delete_user' user.id %}', '{{ user.get_full_name|default:user.username|title }}')"
                                 class="text-red-600 hover:text-red-900 font-medium">

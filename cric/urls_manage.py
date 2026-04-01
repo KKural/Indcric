@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import create_session_view, attendance_view, payments_view, UsersHtmxTableView, edit_user_view, match_attendance_detail_view, create_user_view
-from .views_polls import poll_detail_view, create_poll_view
+from .views import create_session_view, attendance_view, payments_view, UsersHtmxTableView, edit_user_view, match_attendance_detail_view, create_user_view, delete_user_view
+from .views_polls import poll_detail_view, create_poll_view, create_rating_poll_view
 
 app_name = 'cric'
 
@@ -11,7 +11,10 @@ urlpatterns = [
     path('payments/', payments_view, name="manage-payments"),
     path('manage-users/', UsersHtmxTableView.as_view(), name="manage-users"),
     path('edit-user/<int:user_id>/', edit_user_view, name="edit-user"),
+    path('users/edit/<int:user_id>/', edit_user_view, name="edit_user"),
     path('users/create/', create_user_view, name="create_user"),
+    path('users/delete/<int:user_id>/', delete_user_view, name="delete_user"),
+    path('rating-polls/create/<int:user_id>/', create_rating_poll_view, name="create_rating_poll"),
     path('poll/<int:poll_id>/', poll_detail_view, name='poll_detail'),
     path('match/<int:match_id>/create-poll/', create_poll_view, name='create_poll'),
 ]
