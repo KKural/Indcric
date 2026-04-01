@@ -26,16 +26,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-v@v8d$*(-5sso_wrjp(_tl7o3ao(_q98*c&0d4o3c5vbwxhbj%"
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-v@v8d$*(-5sso_wrjp(_tl7o3ao(_q98*c&0d4o3c5vbwxhbj%")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = ['icg-club.azurewebsites.net', 'localhost', '127.0.0.1', '*']
+ALLOWED_HOSTS = ['icg-club.azurewebsites.net', 'localhost', '127.0.0.1', '.onrender.com']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://icg-club.azurewebsites.net',
-    'http://icg-club.azurewebsites.net'
+    'http://icg-club.azurewebsites.net',
+    'https://*.onrender.com',
 ]
 
 # Application definition
@@ -106,15 +107,31 @@ WSGI_APPLICATION = "cric_core.wsgi.application"
 
 required_vars = ["db_hostname", "db_databasename", "db_username", "db_password"]
 missing = [var for var in required_vars if not os.getenv(var)]
-if missing and not DEBUG:
+# Only raise if no other DB config method is available
+_has_db_url = os.environ.get('DATABASE_URL') or os.environ.get('CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING')
+if missing and not DEBUG and not _has_db_url:
     raise Exception(f"Missing environment variables: {', '.join(missing)}")
 
 
-# Check for connection string first (preferred method)
-DATABASE_URL = os.environ.get('CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING')
+# Check for Render/standard DATABASE_URL first
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+# Fallback: Azure connection string format
+AZURE_DB_URL = os.environ.get('CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING')
 
 if DATABASE_URL:
+    logger.info("Using DATABASE_URL for database configuration")
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    }
+    # Optionally override schema via DATABASE_SCHEMA env var
+    db_schema = os.environ.get('DATABASE_SCHEMA')
+    if db_schema:
+        DATABASES['default']['OPTIONS'] = {'options': f'-c search_path={db_schema},public'}
+
+elif AZURE_DB_URL:
     logger.info("Using Azure connection string for database configuration")
+    DATABASE_URL = AZURE_DB_URL
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }

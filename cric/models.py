@@ -133,7 +133,9 @@ class Poll(models.Model):
 class Vote(models.Model):
     poll = models.ForeignKey(
         Poll, on_delete=models.CASCADE, related_name='votes')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True)
+    guest_name = models.CharField(max_length=100, blank=True, default='')
     CHOICES = (
         ('yes', 'Yes'),
         ('no', 'No'),
@@ -143,6 +145,12 @@ class Vote(models.Model):
 
     class Meta:
         unique_together = ('poll', 'user')
+
+    @property
+    def display_name(self):
+        if self.user:
+            return self.user.get_full_name() or self.user.username
+        return self.guest_name or 'Guest'
 
 
 class Match(models.Model):

@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.contrib import messages
 from decimal import Decimal, InvalidOperation
 import random
+from django.views.decorators.http import require_POST
 
 from django_tables2 import SingleTableMixin
 from django_filters.views import FilterView
@@ -430,9 +431,14 @@ def session_detail_view(request, session_id):
     total_votes = 0
     yes_percentage = 0
     yes_voters = []
+    no_voters = []
+    poll_share_url = None
 
     if hasattr(session, 'poll'):
         poll = session.poll
+        poll_share_url = request.build_absolute_uri(
+            f'/poll/{poll.id}/guest-vote/'
+        )
         if request.user.is_authenticated:
             vote = Vote.objects.filter(poll=poll, user=request.user).first()
             if vote:
@@ -445,14 +451,19 @@ def session_detail_view(request, session_id):
         if total_votes > 0:
             yes_percentage = (yes_votes / total_votes) * 100
 
-        # Get users who voted yes
         yes_voters = []
         for vote in poll.votes.filter(choice='yes').select_related('user'):
             voter_info = {
                 'user': vote.user,
+                'display_name': vote.display_name,
                 'team_assigned': False
             }
             yes_voters.append(voter_info)
+
+        no_voters = [
+            {'display_name': v.display_name}
+            for v in poll.votes.filter(choice='no').select_related('user')
+        ]
 
     # Get match and team information if it exists
     match = session.matches.first()
@@ -467,22 +478,18 @@ def session_detail_view(request, session_id):
             team1 = teams[0]
             team1_players = SessionPlayer.objects.filter(
                 session=session, team=team1).select_related('user').all()
-
-            # Mark users who are in teams as assigned
             for player in team1_players:
                 for voter in yes_voters:
-                    if voter['user'].id == player.user.id:
+                    if voter['user'] and voter['user'].id == player.user.id:
                         voter['team_assigned'] = True
 
         if teams.count() >= 2:
             team2 = teams[1]
             team2_players = SessionPlayer.objects.filter(
                 session=session, team=team2).select_related('user').all()
-
-            # Mark users who are in teams as assigned
             for player in team2_players:
                 for voter in yes_voters:
-                    if voter['user'].id == player.user.id:
+                    if voter['user'] and voter['user'].id == player.user.id:
                         voter['team_assigned'] = True
 
     context = {
@@ -493,6 +500,8 @@ def session_detail_view(request, session_id):
         'total_votes': total_votes,
         'yes_percentage': yes_percentage,
         'yes_voters': yes_voters,
+        'no_voters': no_voters,
+        'poll_share_url': poll_share_url,
         'team1': team1,
         'team2': team2,
         'team1_players': team1_players,
@@ -510,21 +519,73 @@ def vote_session_view(request, poll_id):
 
     if request.method == 'POST':
         if not poll.is_open:
-            messages.error(request, "This poll is closed.")
+            messages.error(request, 'This poll is closed.')
             return redirect('session_detail', session_id=session.id)
 
         choice = request.POST.get('choice')
         if choice in ['yes', 'no']:
-            vote, created = Vote.objects.update_or_create(
+            Vote.objects.update_or_create(
                 poll=poll,
                 user=request.user,
                 defaults={'choice': choice}
             )
             messages.success(request, f"You have voted '{choice}'.")
         else:
-            messages.error(request, "Invalid choice.")
+            messages.error(request, 'Invalid choice.')
 
     return redirect('session_detail', session_id=session.id)
+
+
+def guest_vote_view(request, poll_id):
+    """Allow anyone to vote on a poll using just their username."""
+    poll = get_object_or_404(Poll, id=poll_id)
+    session = poll.session
+    error = None
+    success = None
+
+    if request.method == 'POST':
+        if not poll.is_open:
+            error = 'This poll is closed.'
+        else:
+            username = request.POST.get('username', '').strip()
+            choice = request.POST.get('choice')
+            if not username:
+                error = 'Please enter your username.'
+            elif choice not in ['yes', 'no']:
+                error = 'Please select Yes or No.'
+            else:
+                user_obj = User.objects.filter(
+                    username__iexact=username).first()
+                if user_obj:
+                    Vote.objects.update_or_create(
+                        poll=poll,
+                        user=user_obj,
+                        defaults={'choice': choice, 'guest_name': ''}
+                    )
+                else:
+                    existing = Vote.objects.filter(
+                        poll=poll, user=None,
+                        guest_name__iexact=username
+                    ).first()
+                    if existing:
+                        existing.choice = choice
+                        existing.save()
+                    else:
+                        Vote.objects.create(
+                            poll=poll,
+                            user=None,
+                            guest_name=username,
+                            choice=choice
+                        )
+                success = f"Thanks {username}! Your vote ({choice.upper()}) has been recorded."
+
+    context = {
+        'poll': poll,
+        'session': session,
+        'error': error,
+        'success': success,
+    }
+    return render(request, 'cric/pages/guest_vote.html', context)
 
 
 @login_required

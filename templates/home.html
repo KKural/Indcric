@@ -27,8 +27,14 @@
                             <p class="text-gray-600">{{ session.date|date:"j F Y" }} at {{ session.time }}</p>
                             <p class="text-gray-600">{{ session.location }}</p>
                         </a>
-                        {% if user.is_staff %}
-                        <div class="ml-4">
+                        <div class="ml-4 flex flex-col items-end gap-2">
+                            <a href="{% url 'session_detail' session.id %}#toss"
+                                onclick="event.preventDefault(); sessionStorage.setItem('gcc-open-tab','toss'); window.location.href=this.href;"
+                                title="Coin Toss"
+                                class="flex items-center gap-1 text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-semibold px-2.5 py-1.5 rounded-full border border-yellow-200 transition-colors whitespace-nowrap">
+                                &#127922; Toss
+                            </a>
+                            {% if user.is_staff %}
                             <form method="POST" action="{% url 'delete_session' session.id %}" onsubmit="return confirm('Are you sure you want to delete this session? This action cannot be undone.');">
                                 {% csrf_token %}
                                 <button type="submit" class="text-red-500 hover:text-red-700">

@@ -4,7 +4,7 @@ from . import views_users
 from .views import UsersHtmxTableView, create_session_view, attendance_view, match_attendance_detail_view
 from .views import payments_view, manage_users, edit_user_view, create_user_view, delete_session_view, delete_user_view
 from .views import session_detail_view, vote_session_view, close_poll_view, save_teams_view, delete_session_view
-from .views import split_teams_balanced_view, toss_view
+from .views import split_teams_balanced_view, toss_view, guest_vote_view
 from .views_polls import (
     poll_detail_view, create_poll_view,
     rating_poll_list_view, rating_poll_detail_view,
@@ -20,6 +20,7 @@ urlpatterns = [
     path('poll/<int:poll_id>/', poll_detail_view, name='poll_detail'),
     path('poll/<int:poll_id>/vote/', vote_session_view, name='vote_session'),
     path('poll/<int:poll_id>/toggle/', close_poll_view, name='close_poll'),
+    path('poll/<int:poll_id>/guest-vote/', guest_vote_view, name='guest_vote'),
     path('session/<int:session_id>/create-poll/',
          create_poll_view, name='create_poll'),
     path('session/<int:session_id>/save-teams/',
