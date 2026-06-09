@@ -26,20 +26,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY", "django-insecure-v@v8d$*(-5sso_wrjp(_tl7o3ao(_q98*c&0d4o3c5vbwxhbj%")
+SECRET_KEY = os.getenv(
+    "SECRET_KEY",
+    "django-insecure-v@v8d$*(-5sso_wrjp(_tl7o3ao(_q98*c&0d4o3c5vbwxhbj%",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = ['icg-club.azurewebsites.net',
-                 'localhost', '127.0.0.1', '.onrender.com']
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if h.strip()
+]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://icg-club.azurewebsites.net',
-    'http://icg-club.azurewebsites.net',
-    'https://*.onrender.com',
+    o.strip()
+    for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
 ]
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = False
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+    X_FRAME_OPTIONS = "DENY"
 
 # Application definition
 
@@ -59,22 +76,77 @@ INSTALLED_APPS = [
     'allauth.account',
     # 'allauth.socialaccount',
 
-    "cric",
+    # New multi-app structure
+    "apps.accounts",
+    "apps.sessions",
+    "apps.matches",
+    "apps.polls",
+    "apps.payments",
+    "apps.notifications",
 ]
 SITE_ID = 1
 
 LOGIN_REDIRECT_URL = '/'
+# After signup, send new users through onboarding (role picker) before home.
+# The onboarding view bounces existing users straight to their profile.
+ACCOUNT_SIGNUP_REDIRECT_URL = '/profile/onboarding/'
+
+# --- Email backend ---
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+    _brevo_key = os.getenv("BREVO_API_KEY", "")
+    if not _brevo_key:
+        raise Exception("BREVO_API_KEY environment variable is not set")
+    ANYMAIL = {"BREVO_API_KEY": _brevo_key}
+
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "IndCric <indiancricket.ghent@gmail.com>")
+
+BOT_WEBHOOK_TOKEN = os.getenv("BOT_WEBHOOK_TOKEN", "")
+
+# WhatsApp Cloud API
+WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "")
+# Meta App Secret — used to verify X-Hub-Signature-256 on inbound webhooks.
+# Leave empty in dev; required in prod to reject forged webhook calls.
+WHATSAPP_APP_SECRET = os.getenv("WHATSAPP_APP_SECRET", "")
+# Leave empty to disable session reminders until Meta approves the template.
+WHATSAPP_REMINDER_TEMPLATE = os.getenv("WHATSAPP_REMINDER_TEMPLATE", "")
+# Approved template Meta calls 'session_rsvp_temp'. Override via env if renamed.
+WHATSAPP_RSVP_TEMPLATE = os.getenv("WHATSAPP_RSVP_TEMPLATE", "session_rsvp_temp")
+# Locale of approved templates. en_GB matches the IndCric WABA submission.
+WHATSAPP_TEMPLATE_LANGUAGE = os.getenv("WHATSAPP_TEMPLATE_LANGUAGE", "en_GB")
+# Bot's display phone number in E.164 (with or without leading '+'). Used to build
+# wa.me/<number>?text=YES%20<session_id> deep links in the group share message
+# so members can tap-to-RSVP, which opens a free 24h service window for replies.
+WHATSAPP_BOT_NUMBER = os.getenv("WHATSAPP_BOT_NUMBER", "")
+# Public base URL of the site — used in bot replies (e.g. the sign-up link sent
+# to unrecognised numbers). Override per-environment via env.
+SITE_URL = os.getenv("SITE_URL", "https://indcric.onrender.com")
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# --- allauth account behavior ---
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "optional"
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_LOGIN_METHODS = {"username", "email"}
+ACCOUNT_SIGNUP_FIELDS = ["username*", "email*", "password1*", "password2*"]
+# Custom signup form adds the required WhatsApp phone field (used by the
+# WhatsApp bot integration in apps/notifications).
+ACCOUNT_FORMS = {"signup": "apps.accounts.forms.CustomSignupForm"}
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http" if DEBUG else "https"
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[IndCric] "
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    # Add this line after SecurityMiddleware
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add this line after SecurityMiddleware
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    # Ensure this line is present
-    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",  # Ensure this line is present
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'allauth.account.middleware.AccountMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
@@ -90,10 +162,8 @@ ROOT_URLCONF = "cric_core.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # include your custom templates folder if needed
-        'DIRS': [BASE_DIR / "templates"],
-        # ensures app templates (like cric_manage) are detected
-        'APP_DIRS': True,
+        'DIRS': [BASE_DIR / "templates", BASE_DIR / "cric" / "templates"],  # include custom + legacy cric templates
+        'APP_DIRS': True,  # ensures app templates (like cric_manage) are detected
         'OPTIONS': {
             'context_processors': [
                 "django.template.context_processors.debug",
@@ -111,46 +181,29 @@ WSGI_APPLICATION = "cric_core.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-required_vars = ["db_hostname", "db_databasename",
-                 "db_username", "db_password"]
-missing = [var for var in required_vars if not os.getenv(var)]
-# Only raise if no other DB config method is available
-_has_db_url = os.environ.get('DATABASE_URL') or os.environ.get(
-    'CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING')
-if missing and not DEBUG and not _has_db_url:
-    raise Exception(f"Missing environment variables: {', '.join(missing)}")
+if not DEBUG and not os.getenv("CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING"):
+    required_vars = ["db_hostname", "db_databasename", "db_username", "db_password"]
+    missing = [var for var in required_vars if not os.getenv(var)]
+    if missing:
+        raise Exception(f"Missing environment variables: {', '.join(missing)}")
 
 
-# Check for Render/standard DATABASE_URL first
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
-# Fallback: Azure connection string format
-AZURE_DB_URL = os.environ.get('CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING')
+# Check for connection string first (preferred method)
+DATABASE_URL = os.environ.get('CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING')
 
 if DATABASE_URL:
-    logger.info("Using DATABASE_URL for database configuration")
+    logger.info("Using connection string for database configuration")
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-    # Optionally override schema via DATABASE_SCHEMA env var
-    db_schema = os.environ.get('DATABASE_SCHEMA')
-    if db_schema:
-        DATABASES['default']['OPTIONS'] = {
-            'options': f'-c search_path={db_schema},public'}
-
-elif AZURE_DB_URL:
-    logger.info("Using Azure connection string for database configuration")
-    DATABASE_URL = AZURE_DB_URL
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
-    }
-    DATABASES['default']['OPTIONS'] = {
-        'options': '-c search_path=django_schema,public'}
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS'].setdefault('sslmode', 'require')
+    # Render free Postgres closes idle connections; ping before reuse and reconnect if dead.
+    DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 
 # Fall back to individual environment variables if available
 elif os.getenv("db_hostname") and os.getenv("db_databasename") and os.getenv("db_username") and os.getenv("db_password"):
-    logger.info(
-        "Using individual environment variables for database configuration")
+    logger.info("Using individual environment variables for database configuration")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -159,26 +212,21 @@ elif os.getenv("db_hostname") and os.getenv("db_databasename") and os.getenv("db
             'PASSWORD': os.getenv("db_password"),
             'HOST': os.getenv("db_hostname"),
             'PORT': os.getenv("db_port", "5432"),
+            'CONN_MAX_AGE': 600,
+            'CONN_HEALTH_CHECKS': True,
             'OPTIONS': {
                 'options': '-c search_path=django_schema,public'
             }
         }
     }
-
-# Last resort: use local configuration
+    
+# Last resort: use local SQLite
 else:
-    logger.info("Using local database configuration")
+    logger.info("Using local SQLite database configuration")
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'indcric_db',
-            'USER': 'indcric_user',
-            'PASSWORD': 'indcric_password',
-            'HOST': '127.0.0.1',
-            'PORT': '5432',
-            'OPTIONS': {
-                'options': '-c search_path=django_schema,public',
-            }
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 
@@ -206,7 +254,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Brussels"
 
 USE_I18N = True
 
@@ -222,6 +270,20 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Add whitenoise for efficient static file serving on Azure
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add this line after SecurityMiddleware
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",  # Ensure this line is present
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'allauth.account.middleware.AccountMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
+]
+
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
@@ -229,7 +291,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-AUTH_USER_MODEL = 'cric.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 LOGGING = {
     'version': 1,
@@ -258,7 +320,7 @@ LOGGING = {
             'handlers': [
                 'console',
                 # 'file'
-            ],
+                ],
             'level': 'INFO',
             'propagate': True,
         },

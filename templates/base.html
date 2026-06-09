@@ -5,126 +5,376 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Django Template">
-    <title>Indian Cricket Gent</title>
-    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#021B3A">
+    <meta name="description" content="ICG - Cricket Club Manager">
+    <title>{% block title %}ICG{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'icons/icon-192.png' %}">
+
+    {# PWA — installable shell + offline support. Manifest and sw.js are served #}
+    {# from the root scope via cric_core/urls.py so the worker can control '/'. #}
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ICG">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://unpkg.com/htmx.org@2.0.2"></script>
     {% django_htmx_script %}
     <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{% static 'css/user_table.css' %}">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+                    },
+                    colors: {
+                        /* ICG navy primary — anchored by the four brand hexes
+                           supplied 2026-05-20: #435360, #425170, #366293, #021B3A.
+                           500 = vibrant mid-blue, 700 = btn-primary, 900 = header. */
+                        pitch: {
+                            50:  '#eef3f9',
+                            100: '#d5e1ee',
+                            200: '#abc1dc',
+                            300: '#81a1ca',
+                            400: '#5882b8',
+                            500: '#366293',   /* brand mid-blue */
+                            600: '#2b4f78',
+                            700: '#1e3c5d',   /* btn-primary base */
+                            800: '#102942',
+                            900: '#021B3A',   /* deep navy — app header, hero */
+                            950: '#011124',
+                        },
+                        /* Supporting brand tokens — the two slate hexes that
+                           don't sit on the blue ramp. Use as muted accents. */
+                        'brand-steel': '#425170',
+                        'brand-slate': '#435360',
+                    }
+                }
+            }
+        }
+    </script>
     <style type="text/tailwindcss">
-        [x-cloak] { 
-            display: none !important; 
+        [x-cloak] { display: none !important; }
+
+        body {
+            @apply font-sans bg-stone-50 text-stone-900 antialiased;
         }
-        h1 {
-            @apply text-4xl font-bold mb-4
+
+        /* ── Page structure ── */
+        .page-wrapper {
+            @apply min-h-screen flex flex-col;
         }
-        h2 {
-            @apply text-xl font-bold mb-2
+        .page-content {
+            @apply flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8;
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
         }
-    	h3 {
-            @apply text-lg font-bold
+        .page-content-narrow {
+            @apply flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-4 sm:py-8;
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
         }
-        p {
-            @apply mb-4
+
+        /* ── Mobile-first touch helpers ── */
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-top    { padding-top:    env(safe-area-inset-top); }
+        /* Reserve room for the mobile bottom nav (added later in M6).
+           When that nav lands, set `.has-bottom-nav` on <body> on mobile-only routes. */
+        .has-bottom-nav .page-content,
+        .has-bottom-nav .page-content-narrow {
+            padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
         }
-        .button, button, [type='submit'], [type='button'] {
-            @apply bg-indigo-600 text-white font-bold rounded-lg shadow-lg transition-all cursor-pointer
+
+        /* ── Cards ── */
+        .card {
+            @apply bg-white rounded-2xl shadow-sm border border-stone-100;
         }
-        .button, button a, [type='submit'], [type='button'] {
-            @apply px-6 py-4 inline-block 
+        .card-header {
+            @apply px-6 py-4 border-b border-stone-100;
         }
-        .button:hover, button:hover, [type='submit']:hover, [type='button']:hover {
-            @apply bg-indigo-700
+        .card-body {
+            @apply px-6 py-5;
         }
-        .button:active, button:active, [type='submit']:active, [type='button']:active {
-            @apply scale-95
+
+        /* ── Buttons ──
+           Spec: 8px radius, 13px / 500 weight, 7×14 padding (btn-md default).
+           Source: design_handoff/preview/_card.css `.btn` and Component primitives table in README.md. */
+        .btn {
+            @apply inline-flex items-center justify-center gap-1.5 font-medium text-[13px] rounded-lg
+                   transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1
+                   disabled:opacity-50 disabled:cursor-not-allowed select-none;
         }
-        .button.alert, button.alert {
-            @apply bg-red-700
+        /* btn-sm stays compact for inline/dense actions — DO NOT use as a mobile primary CTA. */
+        .btn-sm  { @apply px-2.5 py-1 text-xs rounded-[7px]; }
+        /* btn-md is the mobile-primary baseline: ≥44px tall on phone, collapses to 30px on sm+. */
+        .btn-md  { @apply px-3.5 py-3 sm:py-[7px]; }
+        .btn-lg  { @apply px-[18px] py-3.5 sm:py-[9px] rounded-[9px]; }
+        .btn-xl  { @apply px-6 py-3.5 sm:py-3 text-sm rounded-[10px]; }
+
+        .btn-primary {
+            @apply bg-pitch-700 text-white hover:bg-pitch-800 focus:ring-pitch-600 active:scale-95;
         }
-        .button.alert:hover, button.alert:hover {
-            @apply bg-red-600
+        .btn-secondary {
+            @apply bg-white text-stone-700 border border-stone-300 hover:bg-stone-50 focus:ring-stone-400 active:scale-95;
         }
-        .button-red {
-            @apply !bg-red-500 hover:!bg-red-600
+        .btn-amber {
+            @apply bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-400 active:scale-95;
         }
-        .button-gray {
-            @apply !bg-gray-300 hover:!bg-[#c3c9d0]
+        .btn-danger {
+            @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:scale-95;
         }
-        .navitems>li>a {
-            @apply flex items-center gap-2 h-12 px-4 hover:bg-[rgba(31,41,55,0.3)] rounded-lg;
+        .btn-ghost {
+            @apply text-stone-600 hover:bg-stone-100 focus:ring-stone-300 active:scale-95;
         }
-        .hoverlist>* {
-            @apply hover:bg-gray-100 rounded-md transition duration-150;
+        .btn-success {
+            @apply bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500 active:scale-95;
         }
-        .hoverlist>*>a {
-            @apply flex items-center p-2;
+
+        /* Reset the old heavy global button style */
+        button, [type='submit'], [type='button'] {
+            @apply cursor-pointer;
         }
-        .highlight {
-            @apply !bg-indigo-100;
+
+        /* ── Form inputs ── */
+        .form-label {
+            @apply block text-sm font-semibold text-stone-700 mb-1.5;
         }
-        .allauth content a {
-            @apply underline underline-offset-2
+        /* Form inputs — spec: 10px radius, 13px text, stone-200 border, 2px pitch-500 focus ring.
+           Source: README.md Component primitives table. */
+        /* Inputs are 48px tall on mobile (≥44px tap target) and collapse to 40px on sm+.
+           text-base on mobile prevents iOS auto-zoom on focus; sm+ shrinks back to 13px. */
+        .form-input {
+            @apply w-full rounded-[10px] border border-stone-200 bg-white px-4 py-3 sm:py-2.5 text-base sm:text-[13px] text-stone-900
+                   placeholder-stone-400 transition focus:outline-none focus:ring-2 focus:ring-pitch-500 focus:border-transparent;
         }
-        .allauth content a:hover {
-            @apply text-indigo-500
+        .form-select {
+            @apply w-full rounded-[10px] border border-stone-200 bg-white px-4 py-3 sm:py-2.5 text-base sm:text-[13px] text-stone-900
+                   transition focus:outline-none focus:ring-2 focus:ring-pitch-500 focus:border-transparent;
         }
-        .allauth form[action="/accounts/signup/"] ul {
-            @apply hidden
+        /* Override global textarea/input for auth forms only */
+        .allauth .textarea, .allauth textarea, .allauth input:not([type='checkbox']):not([type='radio']) {
+            @apply w-full rounded-xl py-2.5 px-4 bg-stone-50 border border-stone-200 text-sm
+                   focus:outline-none focus:ring-2 focus:ring-pitch-500 focus:border-transparent;
         }
-        .allauth form[action="/accounts/signup/"] ul.errorlist {
-            @apply block
+        input[type=file] { @apply bg-white pl-0; }
+
+        /* ── Badges — spec: 11px / 600 weight, full pill, 100-bg / 800-fg. ── */
+        .badge {
+            @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold;
         }
-        .allauth .helptext {
-            @apply block mt-4
+        .badge-green   { @apply bg-emerald-100 text-emerald-800; }
+        .badge-pitch   { @apply bg-pitch-100 text-pitch-800; }
+        .badge-red     { @apply bg-red-100 text-red-700; }
+        .badge-amber   { @apply bg-amber-100 text-amber-800; }
+        .badge-sky     { @apply bg-sky-100 text-sky-800; }
+        .badge-purple  { @apply bg-purple-100 text-purple-800; }
+        .badge-stone   { @apply bg-stone-100 text-stone-700; }
+
+        /* Role badges — outline pill with glyph + label */
+        .role-badge {
+            @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border;
         }
-        label {
-            @apply hidden
+        .role-badge-bat    { @apply border-sky-200    bg-sky-50    text-sky-800; }
+        .role-badge-ball   { @apply border-red-200    bg-red-50    text-red-700; }
+        .role-badge-allr   { @apply border-purple-200 bg-purple-50 text-purple-800; }
+        .role-badge-keeper { @apply border-stone-200  bg-stone-50  text-stone-700; }
+
+        /* ── Page headings ──
+           Spec: h1 24px / 700 / line-height 1.3 / tracking -0.015em.
+                 h2 18px / 700 / line-height 1.3.
+                 h3 16px / 600.
+           Source: design_handoff/colors_and_type.css lines 195-214. */
+        h1 { @apply text-2xl font-bold text-stone-900 leading-snug tracking-[-0.015em] mb-1; }
+        h2 { @apply text-lg  font-bold text-stone-800 leading-snug mb-1; }
+        h3 { @apply text-base font-semibold text-stone-800; }
+
+        /* ── Eyebrows & section labels ──
+           Spec: .eyebrow 11px / 700 / uppercase / tracking 0.05em / stone-500
+                 .micro-label mono 9-10px / uppercase / tracking 0.08em / stone-400
+           Source: colors_and_type.css lines 137-138 + 223-229 + JSX SectionHeader. */
+        .eyebrow {
+            @apply text-[11px] font-bold uppercase tracking-[0.05em] text-stone-500;
         }
-        input[type=file] {
-            @apply bg-white pl-0
+        .micro-label {
+            @apply font-mono text-[9px] uppercase tracking-[0.08em] text-stone-400;
         }
-        .textarea, textarea, input {
-            @apply w-full rounded-lg py-4 px-5 bg-gray-100
+        /* Section header row: short accent bar + uppercase eyebrow */
+        .section-eyebrow {
+            @apply flex items-center gap-2 mb-4;
         }
+        .section-eyebrow-bar {
+            @apply w-1 h-5 rounded-full bg-pitch-600;
+        }
+        .section-eyebrow-bar-past {
+            @apply w-1 h-5 rounded-full bg-stone-300;
+        }
+
+        /* ── Misc ── */
+        .divider { @apply border-t border-stone-100; }
+
+        .stat-card {
+            @apply card p-4 flex flex-col gap-1;
+        }
+        .stat-value {
+            @apply text-2xl font-bold text-stone-900;
+        }
+        .stat-label {
+            @apply text-xs font-medium text-stone-500 uppercase tracking-wide;
+        }
+
+        /* ── Stat tiles — spec: 10px radius, soft tint, mono label + tnum numeric. ── */
+        .stat-tile {
+            @apply rounded-[10px] p-4 flex flex-col gap-1 border;
+        }
+        .stat-tile-sky     { @apply bg-sky-50     border-sky-100;     }
+        .stat-tile-red     { @apply bg-red-50     border-red-100;     }
+        .stat-tile-emerald { @apply bg-emerald-50 border-emerald-100; }
+        .stat-tile-amber   { @apply bg-amber-50   border-amber-100;   }
+        .stat-tile-pitch   { @apply bg-pitch-50   border-pitch-100;   }
+        .stat-tile-stone   { @apply bg-stone-50   border-stone-100;   }
+        .stat-tile-num {
+            @apply text-2xl font-bold text-stone-900 tabular-nums leading-none;
+        }
+
+        /* ── Stat column (typographic mono label + tnum numeric, separated by 1px rule).
+              justify-between pins the label to the top and the number to the bottom,
+              so numbers stay aligned across columns even when one label wraps. ── */
+        .stat-col {
+            @apply flex flex-col justify-between gap-1 px-4 py-2 border-l border-stone-100 first:border-l-0 first:pl-0;
+        }
+        .stat-col-num {
+            @apply text-[22px] font-bold text-stone-900 tabular-nums leading-none;
+        }
+
+        /* ── Card accent bars (4-px top bar) ── */
+        .card-accent       { @apply h-1 rounded-t-2xl; }
+        .card-accent-pitch { @apply bg-pitch-600; }
+        .card-accent-stone { @apply bg-stone-200; }
+        .card-accent-amber { @apply bg-amber-500; }
+        .card-accent-red   { @apply bg-red-500;   }
+        .card-accent-sky   { @apply bg-sky-500;   }
+
+        /* ── Date pill (icon + DD MMM) ── */
+        .date-pill {
+            @apply inline-flex items-center gap-1.5 bg-pitch-50 text-pitch-800 rounded-xl px-3 py-1.5 text-xs font-semibold;
+        }
+        .date-pill-past {
+            @apply inline-flex items-center gap-1.5 bg-stone-100 text-stone-600 rounded-xl px-3 py-1.5 text-xs font-semibold;
+        }
+
+        /* ── Alerts — spec: 10px radius, 50-bg / 100-border / 800-fg. ── */
+        .alert {
+            @apply flex items-start gap-3 rounded-[10px] border p-4 text-sm;
+        }
+        .alert-info-box    { @apply bg-sky-50     border-sky-100    text-sky-800;     }
+        .alert-success-box { @apply bg-emerald-50 border-emerald-100 text-emerald-800; }
+        .alert-warn-box    { @apply bg-amber-50   border-amber-100  text-amber-800;   }
+        .alert-error-box   { @apply bg-red-50     border-red-100    text-red-800;     }
+
+        /* ── Allauth forms ── */
+        .allauth label { @apply block text-sm font-semibold text-stone-700 mb-1; }
+        .allauth label[for="id_remember"] { @apply inline-block w-auto mr-2; }
+        .allauth input[name="remember"] { @apply w-auto; }
+        .allauth content a { @apply underline underline-offset-2; }
+        .allauth content a:hover { @apply text-pitch-600; }
+        .allauth form[action="/accounts/signup/"] ul { @apply hidden; }
+        .allauth form[action="/accounts/signup/"] ul.errorlist { @apply block; }
+        .allauth .helptext { @apply block mt-2 text-xs text-stone-500; }
+
+        /* Error lists */
         .errorlist li {
-            @apply p-1 pl-4 border-l-red-500 border-l-4 border-solid mb-2 text-red-500
+            @apply p-1.5 pl-4 border-l-4 border-red-500 border-solid mb-2 text-sm text-red-600 bg-red-50 rounded-r;
         }
-        label[for="id_remember"] {
-            @apply inline-block w-auto mr-2
+
+        /* Nav items */
+        .navitems > li > a {
+            @apply flex items-center gap-2 h-10 px-3 rounded-lg hover:bg-white/10 transition-colors text-sm font-medium;
         }
-        input[name="remember"] {
-            @apply w-auto
+
+        /* Hover list (dropdowns) */
+        .hoverlist > * {
+            @apply hover:bg-stone-50 rounded-lg transition-colors;
         }
-        .alert-info { @apply bg-sky-500 }
-        .alert-success { @apply bg-green-500 }
-        .alert-warning { @apply bg-red-500 }
-        .alert-danger { @apply bg-red-500 }
+        .hoverlist > * > a {
+            @apply flex items-center px-3 py-2 text-sm text-stone-700;
+        }
+
+        /* Alert colours for messages */
+        .alert-info    { @apply bg-sky-500; }
+        .alert-success { @apply bg-pitch-600; }
+        .alert-warning { @apply bg-amber-500; }
+        .alert-danger  { @apply bg-red-500; }
+
+        /* Player chip — spec: 8px radius, hairline border (tinted-by-role to come). */
+        .player-chip {
+            @apply flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-sm border border-stone-100 text-[13px] font-medium;
+        }
+        .player-chip:hover {
+            @apply border-pitch-300 shadow-md;
+        }
+        /* Captain pip — sits inline next to the player's username, not in the action row.
+           Default 16px so it doesn't overpower the 12-13px name beside it. */
+        .captain-badge {
+            @apply inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold leading-none shrink-0;
+        }
+
+        /* Highlight */
+        .highlight { @apply !bg-pitch-50; }
+
+        /* Tables */
+        .data-table { @apply w-full text-sm; }
+        .data-table thead tr { @apply bg-stone-50 border-b border-stone-200; }
+        .data-table thead th { @apply px-4 py-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wide; }
+        .data-table tbody tr { @apply border-b border-stone-50 hover:bg-stone-50/60 transition-colors; }
+        .data-table tbody td { @apply px-4 py-3.5 text-stone-800; }
+
+        /* Rating bar */
+        .rating-bar { @apply h-1.5 rounded-full bg-stone-100 overflow-hidden; }
+        .rating-fill { @apply h-full rounded-full bg-pitch-500; }
+        /* 5-segment skill bar — stone-800 filled / stone-100 empty, rounds to halves.
+           Mobile: half-width segments + tighter gap so it doesn't crowd chip names.
+           Desktop: original spacing restored on sm+. */
+        .skill-bar { @apply inline-flex items-center gap-0.5 sm:gap-1; }
+        .skill-seg { @apply w-2 sm:w-4 h-1 rounded-sm bg-stone-100 overflow-hidden relative; }
+        .skill-seg-fill { @apply absolute inset-0 bg-stone-800; }
+
+        /* Vote bar */
+        .vote-bar { @apply h-2 rounded-full bg-stone-100 overflow-hidden; }
+        .vote-fill-yes { @apply h-full rounded-full bg-emerald-500 transition-all duration-500; }
     </style>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="{% block class %}{% endblock %}">
-	
+
     {% include 'includes/messages.html' %}
+    {% block header %}{% include 'includes/header.html' %}{% endblock %}
 
-    {% include 'includes/header.html' %}
+    {% block layout %}{% endblock %}
 
-    {% block layout %}
-    {% endblock %}
+    <main>
+        {% block main %}{% endblock %}
 
-    {% block main %}
-      <!-- Page-specific content -->
-    {% endblock %}
-
-    {% if not is_profile_page %}
-    {% block content %}
-    {% endblock %}
-    {% endif %}
+        {% block content %}{% endblock %}
+    </main>
 
     {% block javascript %}{% endblock %}
 
+    {# Register the ICG service worker. Skips localhost/127.0.0.1 so dev hot-reload   #}
+    {# isn't shadowed by cached static assets. Failure is non-fatal (PWA is progressive). #}
+    <script>
+        (function () {
+            if (!('serviceWorker' in navigator)) return;
+            var host = window.location.hostname;
+            if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') return;
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .catch(function (err) { console.warn('SW registration failed:', err); });
+            });
+        })();
+    </script>
 </body>
 </html>
