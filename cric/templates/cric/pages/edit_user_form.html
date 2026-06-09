@@ -31,6 +31,15 @@
                 <option value="allrounder" {% if user.role == 'allrounder' %}selected{% endif %}>All-rounder</option>
             </select>
         </div>
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2 !inline-block" for="drink_preference">Drink preference</label>
+            <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    id="drink_preference" name="drink_preference">
+                <option value="non_alcohol" {% if user.drink_preference == 'non_alcohol' %}selected{% endif %}>Non-alcoholic / Soft drinks</option>
+                <option value="alcohol" {% if user.drink_preference == 'alcohol' %}selected{% endif %}>Alcohol</option>
+            </select>
+        </div>
         
         <!-- Player Ratings -->
         <div class="mb-4">

@@ -22,9 +22,22 @@ class User(AbstractUser):
     )
     phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
 
+    DRINK_ALCOHOL = 'alcohol'
+    DRINK_NON_ALCOHOL = 'non_alcohol'
+    DRINK_CHOICES = [
+        (DRINK_ALCOHOL, 'Alcohol'),
+        (DRINK_NON_ALCOHOL, 'Non-alcoholic / Soft drinks'),
+    ]
+    drink_preference = models.CharField(
+        max_length=15,
+        choices=DRINK_CHOICES,
+        default=DRINK_NON_ALCOHOL,
+    )
+
 
 class PlayerProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='profile')
     matches_played = models.PositiveIntegerField(default=0)
     runs_scored = models.PositiveIntegerField(default=0)
     wickets_taken = models.PositiveIntegerField(default=0)

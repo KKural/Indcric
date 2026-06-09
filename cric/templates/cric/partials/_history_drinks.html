@@ -1,0 +1,42 @@
+{% comment %}Drinks tab — rounds paid + grace period status. Context: drink_rows, sessions_attended, grace_remaining, grace_period.{% endcomment %}
+
+{% if grace_remaining > 0 %}
+<div class="px-5 py-3 border-b border-stone-100 bg-amber-50 flex items-center gap-2">
+    <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span class="text-xs text-amber-700">
+        Drinks rotation joins after <strong>{{ grace_period }} sessions attended</strong>.
+        {{ sessions_attended }} attended so far — <strong>{{ grace_remaining }} more to go</strong>.
+    </span>
+</div>
+{% else %}
+<div class="px-5 py-3 border-b border-stone-100 bg-stone-50 flex items-baseline justify-between">
+    <span class="font-mono text-[10px] font-medium text-stone-500 uppercase tracking-[0.08em]">Drink rounds paid</span>
+    <span class="font-mono text-lg font-bold tabular-nums text-stone-900">{{ drink_rows|length }}</span>
+</div>
+{% endif %}
+
+<div class="p-3 flex flex-col gap-1.5">
+    {% for r in drink_rows %}
+    <div class="flex items-center justify-between px-3.5 py-2.5 rounded-[10px] border border-stone-100 bg-white">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="shrink-0 w-9 h-9 rounded-[10px] bg-stone-50 flex items-center justify-center">
+                <span class="text-base">{% if r.drink_type == 'alcohol' %}🍺{% else %}🥤{% endif %}</span>
+            </div>
+            <div class="min-w-0">
+                <p class="text-[13px] font-semibold text-stone-800 truncate -tracking-[0.005em]">
+                    {{ r.session.name }}
+                </p>
+                <p class="font-mono text-[10px] text-stone-400 mt-0.5">
+                    {{ r.session.date|date:"D j M Y" }} &middot; {{ r.get_drink_type_display }}
+                </p>
+            </div>
+        </div>
+        <span class="text-xs text-stone-400 shrink-0">Paid</span>
+    </div>
+    {% empty %}
+    <p class="text-sm text-stone-400 text-center py-8">No drink rounds recorded yet.</p>
+    {% endfor %}
+</div>

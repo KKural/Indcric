@@ -23,14 +23,16 @@ class Match(models.Model):
     toss_winner = models.ForeignKey(
         'Team', on_delete=models.SET_NULL, related_name='+', null=True, blank=True
     )
-    toss_decision = models.CharField(max_length=4, blank=True)  # 'bat' | 'bowl'
+    toss_decision = models.CharField(
+        max_length=4, blank=True)  # 'bat' | 'bowl'
 
     def __str__(self):
         return f"{self.name} in {self.session.name}"
 
 
 class Team(models.Model):
-    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='teams')
+    match = models.ForeignKey(
+        Match, on_delete=models.CASCADE, related_name='teams')
     name = models.CharField(max_length=100)
     captain = models.ForeignKey(
         'accounts.User',
@@ -48,7 +50,8 @@ class Team(models.Model):
 
 class Player(models.Model):
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='players')
+    team = models.ForeignKey(
+        Team, on_delete=models.CASCADE, related_name='players')
     paid = models.BooleanField(default=False)
     role = models.CharField(max_length=20)
 
@@ -65,7 +68,8 @@ class Innings(models.Model):
     A match has up to two innings (number 1 and 2). Scores aren't stored here —
     they derive from the innings' Delivery rows (see apps/matches/scoring.py).
     """
-    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='innings')
+    match = models.ForeignKey(
+        Match, on_delete=models.CASCADE, related_name='innings')
     number = models.PositiveSmallIntegerField(default=1)  # 1 or 2
     batting_team = models.ForeignKey(
         Team, on_delete=models.CASCADE, related_name='batting_innings'
@@ -73,7 +77,8 @@ class Innings(models.Model):
     bowling_team = models.ForeignKey(
         Team, on_delete=models.CASCADE, related_name='bowling_innings'
     )
-    is_closed = models.BooleanField(default=False)  # all out / overs done / manual end
+    # all out / overs done / manual end
+    is_closed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Live scorer working-state: who faces / bowls the NEXT ball. Mutable pointers
@@ -129,26 +134,33 @@ class Delivery(models.Model):
     # Dismissals the bowler is credited with (run-out is not the bowler's wicket).
     BOWLER_DISMISSALS = {'bowled', 'caught', 'lbw', 'stumped', 'hitwicket'}
 
-    innings = models.ForeignKey(Innings, on_delete=models.CASCADE, related_name='deliveries')
-    sequence = models.PositiveIntegerField()  # order within innings; undo = delete max
+    innings = models.ForeignKey(
+        Innings, on_delete=models.CASCADE, related_name='deliveries')
+    # order within innings; undo = delete max
+    sequence = models.PositiveIntegerField()
     # Client-generated id so a retried/replayed POST is deduped (online retry now,
     # offline replay later). Blank for rows created server-side (e.g. admin).
     client_uuid = models.CharField(max_length=64, blank=True, default='')
     over_number = models.PositiveSmallIntegerField(default=0)   # 0-based
-    ball_in_over = models.PositiveSmallIntegerField(default=0)  # legal-ball index 1..6
+    ball_in_over = models.PositiveSmallIntegerField(
+        default=0)  # legal-ball index 1..6
 
-    striker = models.ForeignKey(Player, on_delete=models.PROTECT, related_name='+')
+    striker = models.ForeignKey(
+        Player, on_delete=models.PROTECT, related_name='+')
     non_striker = models.ForeignKey(
         Player, on_delete=models.PROTECT, related_name='+', null=True, blank=True
     )
-    bowler = models.ForeignKey(Player, on_delete=models.PROTECT, related_name='+')
+    bowler = models.ForeignKey(
+        Player, on_delete=models.PROTECT, related_name='+')
 
     runs_off_bat = models.PositiveSmallIntegerField(default=0)
-    extra_type = models.CharField(max_length=10, choices=EXTRA_CHOICES, default=EXTRA_NONE)
+    extra_type = models.CharField(
+        max_length=10, choices=EXTRA_CHOICES, default=EXTRA_NONE)
     extra_runs = models.PositiveSmallIntegerField(default=0)
 
     is_wicket = models.BooleanField(default=False)
-    dismissal_type = models.CharField(max_length=12, choices=DISMISSAL_CHOICES, blank=True)
+    dismissal_type = models.CharField(
+        max_length=12, choices=DISMISSAL_CHOICES, blank=True)
     out_player = models.ForeignKey(
         Player, on_delete=models.PROTECT, related_name='+', null=True, blank=True
     )
@@ -183,8 +195,47 @@ class Delivery(models.Model):
     @property
     def runs_conceded(self):
         """Runs charged to the bowler — byes and leg-byes are not."""
-        penalty = self.extra_runs if self.extra_type in (self.EXTRA_WIDE, self.EXTRA_NOBALL) else 0
+        penalty = self.extra_runs if self.extra_type in (
+            self.EXTRA_WIDE, self.EXTRA_NOBALL) else 0
         return self.runs_off_bat + penalty
 
     def __str__(self):
         return f"{self.innings} — ball {self.sequence}"
+
+
+class PlayerSessionStat(models.Model):
+    """Aggregated performance for one player across all matches in a session.
+
+    One row per (session, user). Written by rating_engine.compute_session_ratings()
+    after a session is finalised. The three rating fields on User are then
+    recalculated from the full history of these rows.
+    """
+
+    session = models.ForeignKey(
+        'cric_sessions.Session',
+        on_delete=models.CASCADE,
+        related_name='player_stats',
+    )
+    user = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.CASCADE,
+        related_name='session_stats',
+    )
+    # Batting
+    runs = models.PositiveIntegerField(default=0)
+    balls_faced = models.PositiveIntegerField(default=0)
+    # Bowling
+    wickets = models.PositiveIntegerField(default=0)
+    balls_bowled = models.PositiveIntegerField(default=0)
+    runs_conceded = models.PositiveIntegerField(default=0)
+    # Fielding
+    catches = models.PositiveIntegerField(default=0)
+    stumpings = models.PositiveIntegerField(default=0)
+
+    computed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [('session', 'user')]
+
+    def __str__(self):
+        return f"{self.user.username} @ {self.session.name}"

@@ -20,7 +20,8 @@ def _normalize_phone(raw):
     if not phone:
         raise forms.ValidationError('WhatsApp number is required.')
     if not phone.startswith('+'):
-        raise forms.ValidationError('Phone must start with + and country code, e.g. +32471123456')
+        raise forms.ValidationError(
+            'Phone must start with + and country code, e.g. +32471123456')
     return phone
 
 
@@ -71,12 +72,14 @@ class OnboardingForm(forms.ModelForm):
     A single `full_name` field is split into first_name / last_name on save.
     """
 
-    full_name = forms.CharField(max_length=120, required=True, label='Full name')
+    full_name = forms.CharField(
+        max_length=120, required=True, label='Full name')
     role = forms.ChoiceField(choices=ROLE_CHOICES, required=True)
 
     class Meta:
         model = User
-        fields = ['full_name', 'role', 'batting_rating', 'bowling_rating', 'fielding_rating']
+        fields = ['full_name', 'role', 'batting_rating',
+                  'bowling_rating', 'fielding_rating', 'drink_preference']
 
     def clean_full_name(self):
         name = (self.cleaned_data.get('full_name') or '').strip()
@@ -107,17 +110,20 @@ class OnboardingForm(forms.ModelForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'role', 'batting_rating', 'bowling_rating', 'fielding_rating']
+        fields = ['first_name', 'last_name', 'role', 'batting_rating',
+                  'bowling_rating', 'fielding_rating', 'drink_preference']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'w-full p-2 border rounded'}),
             'last_name': forms.TextInput(attrs={'class': 'w-full p-2 border rounded'}),
             'role': forms.Select(
                 attrs={'class': 'w-full p-2 border rounded'},
-                choices=[('batsman', 'Batsman'), ('bowler', 'Bowler'), ('allrounder', 'All-Rounder')],
+                choices=[('batsman', 'Batsman'), ('bowler', 'Bowler'),
+                         ('allrounder', 'All-Rounder')],
             ),
             'batting_rating': forms.NumberInput(attrs={'class': 'w-full p-2 border rounded', 'min': '0', 'max': '5', 'step': '0.5'}),
             'bowling_rating': forms.NumberInput(attrs={'class': 'w-full p-2 border rounded', 'min': '0', 'max': '5', 'step': '0.5'}),
             'fielding_rating': forms.NumberInput(attrs={'class': 'w-full p-2 border rounded', 'min': '0', 'max': '5', 'step': '0.5'}),
+            'drink_preference': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def clean_batting_rating(self):
@@ -164,5 +170,6 @@ class PhoneForm(forms.ModelForm):
     def clean_phone(self):
         phone = _normalize_phone(self.cleaned_data.get('phone'))
         if User.objects.filter(phone=phone).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError('This number is already registered to another account.')
+            raise forms.ValidationError(
+                'This number is already registered to another account.')
         return phone

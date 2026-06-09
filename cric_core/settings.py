@@ -101,7 +101,8 @@ else:
         raise Exception("BREVO_API_KEY environment variable is not set")
     ANYMAIL = {"BREVO_API_KEY": _brevo_key}
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "IndCric <indiancricket.ghent@gmail.com>")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL", "IndCric <indiancricket.ghent@gmail.com>")
 
 BOT_WEBHOOK_TOKEN = os.getenv("BOT_WEBHOOK_TOKEN", "")
 
@@ -115,7 +116,8 @@ WHATSAPP_APP_SECRET = os.getenv("WHATSAPP_APP_SECRET", "")
 # Leave empty to disable session reminders until Meta approves the template.
 WHATSAPP_REMINDER_TEMPLATE = os.getenv("WHATSAPP_REMINDER_TEMPLATE", "")
 # Approved template Meta calls 'session_rsvp_temp'. Override via env if renamed.
-WHATSAPP_RSVP_TEMPLATE = os.getenv("WHATSAPP_RSVP_TEMPLATE", "session_rsvp_temp")
+WHATSAPP_RSVP_TEMPLATE = os.getenv(
+    "WHATSAPP_RSVP_TEMPLATE", "session_rsvp_temp")
 # Locale of approved templates. en_GB matches the IndCric WABA submission.
 WHATSAPP_TEMPLATE_LANGUAGE = os.getenv("WHATSAPP_TEMPLATE_LANGUAGE", "en_GB")
 # Bot's display phone number in E.164 (with or without leading '+'). Used to build
@@ -128,9 +130,7 @@ SITE_URL = os.getenv("SITE_URL", "https://indcric.onrender.com")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # --- allauth account behavior ---
-ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = "optional"
-ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_LOGIN_METHODS = {"username", "email"}
 ACCOUNT_SIGNUP_FIELDS = ["username*", "email*", "password1*", "password2*"]
 # Custom signup form adds the required WhatsApp phone field (used by the
@@ -141,12 +141,14 @@ ACCOUNT_EMAIL_SUBJECT_PREFIX = "[IndCric] "
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add this line after SecurityMiddleware
+    # Add this line after SecurityMiddleware
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",  # Ensure this line is present
+    # Ensure this line is present
+    "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'allauth.account.middleware.AccountMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
@@ -162,8 +164,10 @@ ROOT_URLCONF = "cric_core.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates", BASE_DIR / "cric" / "templates"],  # include custom + legacy cric templates
-        'APP_DIRS': True,  # ensures app templates (like cric_manage) are detected
+        # include custom + legacy cric templates
+        'DIRS': [BASE_DIR / "templates", BASE_DIR / "cric" / "templates"],
+        # ensures app templates (like cric_manage) are detected
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 "django.template.context_processors.debug",
@@ -182,7 +186,8 @@ WSGI_APPLICATION = "cric_core.wsgi.application"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 if not DEBUG and not os.getenv("CUSTOMCONNSTR_POSTGRESQL_CONNECTION_STRING"):
-    required_vars = ["db_hostname", "db_databasename", "db_username", "db_password"]
+    required_vars = ["db_hostname", "db_databasename",
+                     "db_username", "db_password"]
     missing = [var for var in required_vars if not os.getenv(var)]
     if missing:
         raise Exception(f"Missing environment variables: {', '.join(missing)}")
@@ -203,7 +208,8 @@ if DATABASE_URL:
 
 # Fall back to individual environment variables if available
 elif os.getenv("db_hostname") and os.getenv("db_databasename") and os.getenv("db_username") and os.getenv("db_password"):
-    logger.info("Using individual environment variables for database configuration")
+    logger.info(
+        "Using individual environment variables for database configuration")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -219,7 +225,7 @@ elif os.getenv("db_hostname") and os.getenv("db_databasename") and os.getenv("db
             }
         }
     }
-    
+
 # Last resort: use local SQLite
 else:
     logger.info("Using local SQLite database configuration")
@@ -273,12 +279,14 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Add whitenoise for efficient static file serving on Azure
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add this line after SecurityMiddleware
+    # Add this line after SecurityMiddleware
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",  # Ensure this line is present
+    # Ensure this line is present
+    "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'allauth.account.middleware.AccountMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
@@ -320,7 +328,7 @@ LOGGING = {
             'handlers': [
                 'console',
                 # 'file'
-                ],
+            ],
             'level': 'INFO',
             'propagate': True,
         },

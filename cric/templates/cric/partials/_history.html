@@ -27,6 +27,8 @@ payment_rows+payment_totals / wallet_rows+wallet_balance).
         {% include "cric/partials/_history_payments.html" %}
     {% elif history_tab == 'wallet' %}
         {% include "cric/partials/_history_wallet.html" %}
+    {% elif history_tab == 'drinks' %}
+        {% include "cric/partials/_history_drinks.html" %}
     {% else %}
         {% include "cric/partials/_history_games.html" %}
     {% endif %}

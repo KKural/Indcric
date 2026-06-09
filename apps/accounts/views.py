@@ -50,7 +50,7 @@ class UsersHtmxTableView(SingleTableMixin, FilterView):
 # Visible to the user themselves and to staff only.
 # ─────────────────────────────────────────────────────────────────────────────
 
-HISTORY_TABS = ('games', 'payments', 'wallet')
+HISTORY_TABS = ('games', 'payments', 'wallet', 'drinks')
 
 
 def _games_history(user):
@@ -163,18 +163,35 @@ def _wallet_history(user):
     return rows, running
 
 
+def _drinks_history(user):
+    """All DrinkRound rows where user was the payer, newest first."""
+    from apps.payments.models import DrinkRound
+    from apps.payments.drinks import GRACE_PERIOD, sessions_attended_count
+    rows = list(
+        DrinkRound.objects.filter(payer=user)
+        .select_related('session')
+        .order_by('-session__date', '-id')
+    )
+    attended = sessions_attended_count(user)
+    remaining = max(0, GRACE_PERIOD - attended)
+    return rows, attended, remaining, GRACE_PERIOD
+
+
 def _history_context(user, tab):
     if tab not in HISTORY_TABS:
         tab = 'games'
     ctx = {
         'profile_user': user,
         'history_tab': tab,
-        'tabs': [('games', 'Games'), ('payments', 'Payments'), ('wallet', 'Wallet')],
+        'tabs': [('games', 'Games'), ('payments', 'Payments'), ('wallet', 'Wallet'), ('drinks', 'Drinks')],
     }
     if tab == 'payments':
         ctx['payment_rows'], ctx['payment_totals'] = _payments_history(user)
     elif tab == 'wallet':
         ctx['wallet_rows'], ctx['wallet_balance'] = _wallet_history(user)
+    elif tab == 'drinks':
+        ctx['drink_rows'], ctx['sessions_attended'], ctx['grace_remaining'], ctx['grace_period'] = _drinks_history(
+            user)
     else:
         ctx['game_rows'] = _games_history(user)
     return ctx
@@ -206,19 +223,22 @@ def profile_view(request, username=None):
                 form.save()
                 messages.success(request, "Profile updated successfully!")
                 return redirect('profile')
-        context = {'user': user, 'form': form, 'edit_mode': True, 'is_profile_page': True}
+        context = {'user': user, 'form': form,
+                   'edit_mode': True, 'is_profile_page': True}
     else:
         from apps.matches import scoring
         context = {
             'user': user,
             'is_profile_page': True,
             'can_view_history': can_view_history,
-            'career': scoring.career_stats(user),  # derived batting/bowling/fielding
+            # derived batting/bowling/fielding
+            'career': scoring.career_stats(user),
         }
         if can_view_history:
             # Render the requested (or default Games) tab inline — no load flash.
             # ?tab= lets deep links (e.g. Member balances) land on Payments.
-            context.update(_history_context(user, request.GET.get('tab', 'games')))
+            context.update(_history_context(
+                user, request.GET.get('tab', 'games')))
 
     return render(request, 'cric/pages/profile.html', context)
 
@@ -360,7 +380,8 @@ def manage_users(request):
         is_active = request.POST.get('is_active') == 'True'
         wallet_amount = request.POST.get('wallet_amount')
         try:
-            wallet_amount = Decimal(wallet_amount) if wallet_amount else Decimal('0.00')
+            wallet_amount = Decimal(
+                wallet_amount) if wallet_amount else Decimal('0.00')
         except (ValueError, InvalidOperation):
             wallet_amount = Decimal('0.00')
 
@@ -373,7 +394,8 @@ def manage_users(request):
                 user.is_active = is_active
                 user.save()
                 current_balance = (
-                    user.wallet_set.aggregate(s=Sum('amount'))['s'] or Decimal('0')
+                    user.wallet_set.aggregate(s=Sum('amount'))[
+                        's'] or Decimal('0')
                 )
                 delta = wallet_amount - current_balance
                 if delta != 0:
@@ -402,7 +424,8 @@ def delete_user_view(request, user_id):
             else:
                 username = user.get_full_name() or user.username
                 user.delete()
-                messages.success(request, f"User '{username}' deleted successfully.")
+                messages.success(
+                    request, f"User '{username}' deleted successfully.")
         except User.DoesNotExist:
             messages.error(request, "User not found.")
     return redirect('manage-users')
@@ -421,6 +444,8 @@ def edit_user_view(request, user_id):
             username = request.POST.get('username')
             email = request.POST.get('email')
             role = request.POST.get('role')
+            drink_preference = request.POST.get(
+                'drink_preference', 'non_alcohol')
             is_staff = request.POST.get('is_staff') == 'True'
             is_superuser = request.POST.get('is_superuser') == 'True'
             wallet_amount = request.POST.get('wallet_amount')
@@ -429,10 +454,14 @@ def edit_user_view(request, user_id):
             fielding_rating = request.POST.get('fielding_rating')
 
             try:
-                wallet_amount = Decimal(wallet_amount) if wallet_amount else Decimal('0.00')
-                batting_rating = min(max(Decimal(batting_rating if batting_rating else '2.5'), Decimal('0')), Decimal('5'))
-                bowling_rating = min(max(Decimal(bowling_rating if bowling_rating else '2.5'), Decimal('0')), Decimal('5'))
-                fielding_rating = min(max(Decimal(fielding_rating if fielding_rating else '2.5'), Decimal('0')), Decimal('5'))
+                wallet_amount = Decimal(
+                    wallet_amount) if wallet_amount else Decimal('0.00')
+                batting_rating = min(max(Decimal(
+                    batting_rating if batting_rating else '2.5'), Decimal('0')), Decimal('5'))
+                bowling_rating = min(max(Decimal(
+                    bowling_rating if bowling_rating else '2.5'), Decimal('0')), Decimal('5'))
+                fielding_rating = min(max(Decimal(
+                    fielding_rating if fielding_rating else '2.5'), Decimal('0')), Decimal('5'))
             except (ValueError, TypeError, InvalidOperation):
                 wallet_amount = Decimal('0.00')
                 batting_rating = Decimal('2.5')
@@ -443,6 +472,7 @@ def edit_user_view(request, user_id):
                 user.username = username
                 user.email = email
                 user.role = role
+                user.drink_preference = drink_preference
                 user.is_staff = is_staff
                 user.is_superuser = is_superuser
                 user.batting_rating = batting_rating
@@ -453,7 +483,8 @@ def edit_user_view(request, user_id):
                 # Wallet is a ledger: append a balancing row so Sum() lands on
                 # the typed amount. Preserves the deduction/refund history.
                 current_balance = (
-                    user.wallet_set.aggregate(s=Sum('amount'))['s'] or Decimal('0')
+                    user.wallet_set.aggregate(s=Sum('amount'))[
+                        's'] or Decimal('0')
                 )
                 delta = wallet_amount - current_balance
                 if delta != 0:
@@ -491,7 +522,8 @@ def edit_user_view(request, user_id):
 @login_required
 def create_user_view(request):
     if not request.user.is_staff:
-        messages.error(request, "You don't have permission to perform this action.")
+        messages.error(
+            request, "You don't have permission to perform this action.")
         return redirect('manage-users')
 
     if request.method == 'POST':
@@ -516,7 +548,8 @@ def create_user_view(request):
             })
 
         try:
-            user = User.objects.create_user(username=username, email=email, password=password)
+            user = User.objects.create_user(
+                username=username, email=email, password=password)
             user.role = role
             user.is_staff = is_staff
             user.is_superuser = is_superuser
@@ -528,7 +561,8 @@ def create_user_view(request):
             except (ValueError, InvalidOperation):
                 user.wallet_set.create(amount=Decimal('0.00'))
 
-            messages.success(request, f"User '{username}' created successfully!")
+            messages.success(
+                request, f"User '{username}' created successfully!")
             return redirect('manage-users')
         except Exception as e:
             messages.error(request, f"Error creating user: {str(e)}")
@@ -539,3 +573,29 @@ def create_user_view(request):
             })
 
     return render(request, 'cric/pages/create_user_form.html')
+
+
+@staff_member_required
+def bulk_drink_preferences_view(request):
+    """Staff page to set drink_preference for all existing users at once.
+
+    Shows every active user with their current preference.
+    A single POST saves all changes atomically.
+    """
+    users = User.objects.filter(is_active=True).order_by(
+        'first_name', 'username')
+
+    if request.method == 'POST':
+        with transaction.atomic():
+            updated = 0
+            for user in users:
+                new_pref = request.POST.get(f'drink_{user.id}', '').strip()
+                if new_pref in ('alcohol', 'non_alcohol') and user.drink_preference != new_pref:
+                    user.drink_preference = new_pref
+                    user.save(update_fields=['drink_preference'])
+                    updated += 1
+        messages.success(
+            request, f"Drink preferences saved for {updated} player(s).")
+        return redirect('bulk_drink_preferences')
+
+    return render(request, 'cric/pages/bulk_drink_preferences.html', {'users': users})

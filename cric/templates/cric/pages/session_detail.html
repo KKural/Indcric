@@ -126,6 +126,22 @@
 
                         <div class="my-1 border-t border-stone-100"></div>
 
+                        {% if is_past %}
+                        <form method="POST" action="{% url 'finalise_session_ratings' session.id %}">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-stone-50 transition-colors text-left">
+                                <svg class="w-4 h-4 text-pitch-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                                <span>Update Player Ratings</span>
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <div class="my-1 border-t border-stone-100"></div>
+
                         <form method="POST" action="{% url 'delete_session' session.id %}"
                               onsubmit="return confirm('Delete this session? This cannot be undone.')">
                             {% csrf_token %}
@@ -315,6 +331,138 @@
             {% endif %}
         </form>
         {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ═══════════════════════════════════
+         DRINKS ROTATION (staff + past sessions only)
+    ═══════════════════════════════════ -->
+    {% if is_past and user.is_staff and drinks_info %}
+    <div class="card mb-6">
+        <div class="card-header">
+            {% include "_components/eyebrow.html" with label="Drinks rotation" %}
+        </div>
+        <div class="card-body space-y-4">
+            {% for track, label_text in drinks_info.items %}
+            {% if track == 'alcohol' or track == 'non_alcohol' %}
+            {% with already=drinks_info|get_item:track|add:"_already_set" suggestion=drinks_info|get_item:track eligible_key=track|add:"_eligible" %}
+            {% endwith %}
+            {% endif %}
+            {% endfor %}
+
+            {% comment %}-- Alcohol track --{% endcomment %}
+            <div class="rounded-xl border border-stone-100 p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-base">🍺</span>
+                    <span class="text-sm font-semibold text-stone-700">Alcohol</span>
+                    {% if drinks_info.alcohol_already_set %}
+                    <span class="ml-auto badge badge-green text-xs">Confirmed</span>
+                    {% endif %}
+                </div>
+
+                {% if drinks_info.alcohol_already_set %}
+                <p class="text-sm text-stone-600">
+                    Paid by <span class="font-medium">{{ drinks_info.alcohol_already_set.payer.get_full_name|default:drinks_info.alcohol_already_set.payer.username }}</span>
+                </p>
+                <form method="POST" action="{% url 'confirm_drink_round' session.id %}" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="drink_type" value="alcohol">
+                    <select name="payer_id" class="form-select text-sm mb-2">
+                        {% for u in drinks_info.alcohol_eligible %}
+                        <option value="{{ u.id }}" {% if u == drinks_info.alcohol_already_set.payer %}selected{% endif %}>
+                            {{ u.get_full_name|default:u.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-secondary btn-sm">Change payer</button>
+                </form>
+
+                {% elif drinks_info.alcohol %}
+                <p class="text-sm text-stone-500 mb-1">
+                    Suggested: <span class="font-medium text-stone-800">{{ drinks_info.alcohol.user.get_full_name|default:drinks_info.alcohol.user.username }}</span>
+                    {% if drinks_info.alcohol.last_paid %}
+                    <span class="text-stone-400">· last paid {{ drinks_info.alcohol.last_paid|date:"d M Y" }}</span>
+                    {% else %}
+                    <span class="text-stone-400">· never paid</span>
+                    {% endif %}
+                </p>
+                <form method="POST" action="{% url 'confirm_drink_round' session.id %}" class="mt-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="drink_type" value="alcohol">
+                    <div class="flex gap-2 flex-wrap">
+                        <select name="payer_id" class="form-select text-sm flex-1">
+                            {% for u in drinks_info.alcohol_eligible %}
+                            <option value="{{ u.id }}" {% if u == drinks_info.alcohol.user %}selected{% endif %}>
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm shrink-0">Confirm</button>
+                    </div>
+                </form>
+
+                {% else %}
+                <p class="text-sm text-stone-400 italic">No eligible players for alcohol track yet.</p>
+                {% endif %}
+            </div>
+
+            {% comment %}-- Non-alcohol track --{% endcomment %}
+            <div class="rounded-xl border border-stone-100 p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-base">🥤</span>
+                    <span class="text-sm font-semibold text-stone-700">Non-alcoholic / Soft drinks</span>
+                    {% if drinks_info.non_alcohol_already_set %}
+                    <span class="ml-auto badge badge-green text-xs">Confirmed</span>
+                    {% endif %}
+                </div>
+
+                {% if drinks_info.non_alcohol_already_set %}
+                <p class="text-sm text-stone-600">
+                    Paid by <span class="font-medium">{{ drinks_info.non_alcohol_already_set.payer.get_full_name|default:drinks_info.non_alcohol_already_set.payer.username }}</span>
+                </p>
+                <form method="POST" action="{% url 'confirm_drink_round' session.id %}" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="drink_type" value="non_alcohol">
+                    <select name="payer_id" class="form-select text-sm mb-2">
+                        {% for u in drinks_info.non_alcohol_eligible %}
+                        <option value="{{ u.id }}" {% if u == drinks_info.non_alcohol_already_set.payer %}selected{% endif %}>
+                            {{ u.get_full_name|default:u.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-secondary btn-sm">Change payer</button>
+                </form>
+
+                {% elif drinks_info.non_alcohol %}
+                <p class="text-sm text-stone-500 mb-1">
+                    Suggested: <span class="font-medium text-stone-800">{{ drinks_info.non_alcohol.user.get_full_name|default:drinks_info.non_alcohol.user.username }}</span>
+                    {% if drinks_info.non_alcohol.last_paid %}
+                    <span class="text-stone-400">· last paid {{ drinks_info.non_alcohol.last_paid|date:"d M Y" }}</span>
+                    {% else %}
+                    <span class="text-stone-400">· never paid</span>
+                    {% endif %}
+                </p>
+                <form method="POST" action="{% url 'confirm_drink_round' session.id %}" class="mt-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="drink_type" value="non_alcohol">
+                    <div class="flex gap-2 flex-wrap">
+                        <select name="payer_id" class="form-select text-sm flex-1">
+                            {% for u in drinks_info.non_alcohol_eligible %}
+                            <option value="{{ u.id }}" {% if u == drinks_info.non_alcohol.user %}selected{% endif %}>
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm shrink-0">Confirm</button>
+                    </div>
+                </form>
+
+                {% else %}
+                <p class="text-sm text-stone-400 italic">No eligible players for non-alcohol track yet (need ≥{{ drinks_info.grace_period|default:5 }} sessions attended).</p>
+                {% endif %}
+            </div>
+
+        </div>
     </div>
     {% endif %}
 
