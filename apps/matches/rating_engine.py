@@ -112,12 +112,18 @@ def _batting_raw(stat):
 
 
 def _bowling_raw(stat):
-    """0–5 raw score (lower economy = higher). None = skip."""
+    """0–5 raw score (lower economy = higher). None = skip.
+
+    Calibrated for short-format (6–8 over) cricket where eco 7 is average:
+      eco 2  → 5.0 (exceptional)
+      eco 7  → 2.5 (average)
+      eco 12 → 0.0 (poor)
+    Formula: (12 - economy) / 2, clamped 0–5.
+    """
     if stat.balls_bowled == 0:
         return None
     economy = (stat.runs_conceded / stat.balls_bowled) * 6
-    # eco 1 → 5, eco 6 → 0, eco 7+ → clamped 0
-    return _clamp(6 - economy, 0, 5)
+    return _clamp((12 - economy) / 2, 0, 5)
 
 
 def _fielding_raw(stat):
