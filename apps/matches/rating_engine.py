@@ -112,18 +112,22 @@ def _batting_raw(stat):
 
 
 def _bowling_raw(stat):
-    """0–5 raw score (lower economy = higher). None = skip.
+    """0–5 raw score based on wickets taken and runs conceded. None = skip.
 
-    Calibrated for short-format (6–8 over) cricket where eco 7 is average:
-      eco 2  → 5.0 (exceptional)
-      eco 7  → 2.5 (average)
-      eco 12 → 0.0 (poor)
-    Formula: (12 - economy) / 2, clamped 0–5.
+    Each wicket adds +1.2 points, each run conceded subtracts 0.08 points.
+    Baseline is 2.0 (neutral).
+
+    Examples per session:
+      2w, 2r   → 2*1.2 - 2*0.08 + 2.0 = 4.2  (great)
+      2w, 23r  → 2*1.2 - 23*0.08 + 2.0 = 2.6 (decent, wickets saved it)
+      0w, 8r   → 0 - 0.64 + 2.0 = 1.4        (below average)
+      0w, 25r  → 0 - 2.0 + 2.0 = 0.0         (poor)
+      4w, 10r  → 4.8 - 0.8 + 2.0 = 5.0+      (exceptional, clamped to 5)
     """
     if stat.balls_bowled == 0:
         return None
-    economy = (stat.runs_conceded / stat.balls_bowled) * 6
-    return _clamp((12 - economy) / 2, 0, 5)
+    raw = stat.wickets * 1.2 - stat.runs_conceded * 0.08 + 2.0
+    return _clamp(raw, 0, 5)
 
 
 def _fielding_raw(stat):
