@@ -288,9 +288,12 @@ def session_detail_view(request, session_id):
             u.batting_rating if u.batting_rating is not None else Decimal('2.5'))
         bowl = float(
             u.bowling_rating if u.bowling_rating is not None else Decimal('2.5'))
+        fld = float(
+            u.fielding_rating if u.fielding_rating is not None else Decimal('2.5'))
         return {
             'batting': bat,
             'bowling': bowl,
+            'fielding': fld,
             'rating': _combined_rating(u),
         }
 

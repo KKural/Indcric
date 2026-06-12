@@ -1296,6 +1296,7 @@
         el.dataset.rating = m.rating;
         el.dataset.batting = m.batting;
         el.dataset.bowling = m.bowling;
+        el.dataset.fielding = m.fielding;
         pool.appendChild(el);
         renderAsPoolChip(el);   // applies tint + name + A/B buttons
 
@@ -1397,56 +1398,125 @@
         if (empty) empty.classList.toggle('hidden', count > 0);
     }
 
-    /* ───────── Snake-draft auto-balance + hill-climb ─────────
-       1. Sort by combined rating desc, snake-pick A B B A A B B A … (good seed).
-       2. Hill-climb: iteratively swap one player from each team if it lowers
-          the multi-objective gap |Δbatting| + |Δbowling| + |Δrating|.
-          Stops at the first local minimum (typically < ~30 iterations). */
-    const _meanOf = (rows, attr) =>
-        rows.length ? rows.reduce((a, r) => a + parseFloat(r.dataset[attr] || '0'), 0) / rows.length : 0;
-
-    function _teamGapScore(t1Rows, t2Rows) {
-        const dBat = _meanOf(t1Rows, 'batting') - _meanOf(t2Rows, 'batting');
-        const dBow = _meanOf(t1Rows, 'bowling') - _meanOf(t2Rows, 'bowling');
-        const dAvg = _meanOf(t1Rows, 'rating')  - _meanOf(t2Rows, 'rating');
-        return Math.abs(dBat) + Math.abs(dBow) + Math.abs(dAvg);
+    /* ───────── Exact auto-balance ─────────
+       Enumerates balanced partitions instead of relying on a capped local search.
+       Objective: count first, then batting, bowling, fielding, combined rating, role mix,
+       and top-player spread. This avoids snake-draft local minima. */
+    const _num = (row, attr) => Number.parseFloat(row.dataset[attr] || '0') || 0;
+    const _playerStrength = row => (_num(row, 'rating') * 2) + _num(row, 'batting') + _num(row, 'bowling') + _num(row, 'fielding');
+    const _roleBucket = row => {
+        const role = (row.dataset.role || '').toLowerCase();
+        if (role === 'bowler' || role === 'bowling') return 'bowler';
+        if (role === 'allrounder' || role === 'all-rounder') return 'allrounder';
+        if (role === 'keeper' || role === 'wicketkeeper') return 'keeper';
+        if (role === 'batsman' || role === 'batter' || role === 'batting') return 'batsman';
+        return 'other';
+    };
+    const _emptySplitStats = () => ({
+        count: 0,
+        rating: 0,
+        batting: 0,
+        bowling: 0,
+        fielding: 0,
+        top: 0,
+        roles: { batsman: 0, bowler: 0, allrounder: 0, keeper: 0, other: 0 },
+    });
+    function _addToSplitStats(stats, row, topPlayerIds, sign) {
+        const role = _roleBucket(row);
+        stats.count += sign;
+        stats.rating += sign * _num(row, 'rating');
+        stats.batting += sign * _num(row, 'batting');
+        stats.bowling += sign * _num(row, 'bowling');
+        stats.fielding += sign * _num(row, 'fielding');
+        stats.roles[role] += sign;
+        if (topPlayerIds.has(row.dataset.userId)) stats.top += sign;
     }
+    function _allSplitStats(rows, topPlayerIds) {
+        const stats = _emptySplitStats();
+        rows.forEach(row => _addToSplitStats(stats, row, topPlayerIds, 1));
+        return stats;
+    }
+    const _splitMean = (stats, attr) => stats.count ? stats[attr] / stats.count : 0;
+    function _splitScore(team1Stats, totalStats) {
+        const team2Stats = {
+            count: totalStats.count - team1Stats.count,
+            rating: totalStats.rating - team1Stats.rating,
+            batting: totalStats.batting - team1Stats.batting,
+            bowling: totalStats.bowling - team1Stats.bowling,
+            fielding: totalStats.fielding - team1Stats.fielding,
+            top: totalStats.top - team1Stats.top,
+            roles: {
+                batsman: totalStats.roles.batsman - team1Stats.roles.batsman,
+                bowler: totalStats.roles.bowler - team1Stats.roles.bowler,
+                allrounder: totalStats.roles.allrounder - team1Stats.roles.allrounder,
+                keeper: totalStats.roles.keeper - team1Stats.roles.keeper,
+                other: totalStats.roles.other - team1Stats.roles.other,
+            },
+        };
+        const battingGap = Math.abs(_splitMean(team1Stats, 'batting') - _splitMean(team2Stats, 'batting'));
+        const bowlingGap = Math.abs(_splitMean(team1Stats, 'bowling') - _splitMean(team2Stats, 'bowling'));
+        const fieldingGap = Math.abs(_splitMean(team1Stats, 'fielding') - _splitMean(team2Stats, 'fielding'));
+        const ratingGap = Math.abs(_splitMean(team1Stats, 'rating') - _splitMean(team2Stats, 'rating'));
+        const roleGap =
+            Math.abs(team1Stats.roles.bowler - team2Stats.roles.bowler) * 0.35 +
+            Math.abs(team1Stats.roles.allrounder - team2Stats.roles.allrounder) * 0.25 +
+            Math.abs(team1Stats.roles.keeper - team2Stats.roles.keeper) * 0.20 +
+            Math.abs(team1Stats.roles.batsman - team2Stats.roles.batsman) * 0.15;
+        const topGap = Math.abs(team1Stats.top - team2Stats.top) * 0.25;
+        const totalRatingGap = Math.abs(team1Stats.rating - team2Stats.rating) * 0.03;
 
-    function hillClimbBalance(t1, t2) {
-        const EPS = 0.001;            // ignore float-noise non-improvements
-        const SAFETY = 200;
-        for (let pass = 0; pass < SAFETY; pass++) {
-            const t1Rows = Array.from(t1.querySelectorAll('[data-user-id]'));
-            const t2Rows = Array.from(t2.querySelectorAll('[data-user-id]'));
-            if (t1Rows.length === 0 || t2Rows.length === 0) return;
-            let bestScore = _teamGapScore(t1Rows, t2Rows);
-            let bestI = -1, bestJ = -1;
-            for (let i = 0; i < t1Rows.length; i++) {
-                for (let j = 0; j < t2Rows.length; j++) {
-                    const newT1 = t1Rows.slice(); newT1[i] = t2Rows[j];
-                    const newT2 = t2Rows.slice(); newT2[j] = t1Rows[i];
-                    const score = _teamGapScore(newT1, newT2);
-                    if (score < bestScore - EPS) {
-                        bestScore = score; bestI = i; bestJ = j;
-                    }
-                }
+        return (battingGap * 3) + (bowlingGap * 3) + (fieldingGap * 2) + (ratingGap * 2) + roleGap + topGap + totalRatingGap;
+    }
+    function exactBalanceRows(rows) {
+        if (rows.length < 2) return { team1: rows, team2: [] };
+
+        const orderedRows = rows.slice().sort((a, b) =>
+            _playerStrength(b) - _playerStrength(a) ||
+            (a.dataset.username || '').localeCompare(b.dataset.username || '')
+        );
+        const topCount = Math.max(2, Math.ceil(orderedRows.length / 4));
+        const topPlayerIds = new Set(orderedRows.slice(0, topCount).map(row => row.dataset.userId));
+        const totalStats = _allSplitStats(orderedRows, topPlayerIds);
+        const targetSizes = [Math.floor(orderedRows.length / 2)];
+        if (orderedRows.length % 2) targetSizes.push(Math.ceil(orderedRows.length / 2));
+
+        let bestScore = Infinity;
+        let bestIndexes = [];
+        const chosenIndexes = [];
+        const chosenStats = _emptySplitStats();
+
+        function evaluate() {
+            const score = _splitScore(chosenStats, totalStats);
+            if (score < bestScore - 0.000001) {
+                bestScore = score;
+                bestIndexes = chosenIndexes.slice();
             }
-            if (bestI < 0) return;   // local minimum
-            const elA = t1Rows[bestI], elB = t2Rows[bestJ];
-            // Swap via placeholder markers — a naive two-step replaceChild drops a
-            // node, because moving elB into t1 first detaches it from t2.
-            const markA = document.createComment('');
-            const markB = document.createComment('');
-            elA.replaceWith(markA);   // elA out of t1, marker holds its slot
-            elB.replaceWith(markB);   // elB out of t2, marker holds its slot
-            markA.replaceWith(elB);   // elB into t1 at elA's old slot
-            markB.replaceWith(elA);   // elA into t2 at elB's old slot
-            renderAsTeamRow(elB, 'pitch');
-            renderAsTeamRow(elA, 'amber');
         }
+
+        function choose(startIndex, remaining) {
+            if (remaining === 0) {
+                evaluate();
+                return;
+            }
+            for (let i = startIndex; i <= orderedRows.length - remaining; i++) {
+                chosenIndexes.push(i);
+                _addToSplitStats(chosenStats, orderedRows[i], topPlayerIds, 1);
+                choose(i + 1, remaining - 1);
+                _addToSplitStats(chosenStats, orderedRows[i], topPlayerIds, -1);
+                chosenIndexes.pop();
+            }
+        }
+
+        targetSizes.forEach(size => choose(0, size));
+
+        const team1IndexSet = new Set(bestIndexes);
+        return {
+            team1: orderedRows.filter((_, index) => team1IndexSet.has(index)),
+            team2: orderedRows.filter((_, index) => !team1IndexSet.has(index)),
+        };
     }
 
-    function snakeBalance() {
+    function autoBalanceTeams() {
         const avail = document.getElementById('available-users');
         const t1 = document.getElementById('team1-players');
         const t2 = document.getElementById('team2-players');
@@ -1455,23 +1525,20 @@
             ...t1.querySelectorAll('[data-user-id]'),
             ...t2.querySelectorAll('[data-user-id]'),
         ];
-        all.sort((a, b) => parseFloat(b.dataset.rating || '0') - parseFloat(a.dataset.rating || '0'));
+        const split = exactBalanceRows(all);
 
         // Clear containers (preserve pool-empty placeholder)
         t1.innerHTML = ''; t2.innerHTML = '';
         avail.querySelectorAll('[data-user-id]').forEach(c => c.remove());
 
-        all.forEach((el, i) => {
-            // Snake: 0→A, 1→B, 2→B, 3→A, 4→A, 5→B, 6→B, 7→A …
-            const round = Math.floor(i / 2);
-            const aTurn = round % 2 === 0 ? (i % 2 === 0) : (i % 2 === 1);
-            const dest = aTurn ? t1 : t2;
-            dest.appendChild(el);
-            renderAsTeamRow(el, dest === t1 ? 'pitch' : 'amber');
+        split.team1.forEach(el => {
+            t1.appendChild(el);
+            renderAsTeamRow(el, 'pitch');
         });
-
-        // Optimize across bat/bow/avg dimensions via local-swap hill climb.
-        hillClimbBalance(t1, t2);
+        split.team2.forEach(el => {
+            t2.appendChild(el);
+            renderAsTeamRow(el, 'amber');
+        });
 
         // Sort each team batsmen → all-rounders → bowlers, then mark first as captain
         sortTeamByRole('team1-players');
@@ -1555,7 +1622,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('shuffle-teams-btn');
-        if (btn) btn.addEventListener('click', snakeBalance);
+        if (btn) btn.addEventListener('click', autoBalanceTeams);
         // Sort + meter + hidden fields based on whatever the server initially rendered
         sortTeamByRole('team1-players');
         sortTeamByRole('team2-players');
