@@ -112,22 +112,28 @@ def _batting_raw(stat):
 
 
 def _bowling_raw(stat):
-    """0–5 raw score based on wickets taken and runs conceded. None = skip.
+    """0–5 raw score combining wickets + economy. None = skip.
 
-    Each wicket adds +1.2 points, each run conceded subtracts 0.08 points.
-    Baseline is 2.0 (neutral).
+    Two components:
+      Wickets component (0–5): each wicket = +1.0 (max 5 wickets → 5.0)
+      Economy component (0–2.5): eco 2 → 2.5, eco 7 → 1.25, eco 12+ → 0
+        formula: clamp((12 - economy) / 2, 0, 2.5)
 
-    Examples per session:
-      2w, 2r   → 2*1.2 - 2*0.08 + 2.0 = 4.2  (great)
-      2w, 23r  → 2*1.2 - 23*0.08 + 2.0 = 2.6 (decent, wickets saved it)
-      0w, 8r   → 0 - 0.64 + 2.0 = 1.4        (below average)
-      0w, 25r  → 0 - 2.0 + 2.0 = 0.0         (poor)
-      4w, 10r  → 4.8 - 0.8 + 2.0 = 5.0+      (exceptional, clamped to 5)
+    Combined = clamp(wickets_pts + economy_pts, 0, 5)
+
+    Examples:
+      2w, eco 2.0  → 2.0 + 2.5 = 4.5  (excellent)
+      3w, eco 7.7  → 3.0 + 1.07 = 4.1 (good — wickets compensate)
+      2w, eco 24   → 2.0 + 0   = 2.0  (wickets scored, bad eco no bonus)
+      0w, eco 4.0  → 0   + 2.0 = 2.0  (economical but no wickets)
+      0w, eco 20   → 0   + 0   = 0.0  (poor)
     """
     if stat.balls_bowled == 0:
         return None
-    raw = stat.wickets * 1.2 - stat.runs_conceded * 0.08 + 2.0
-    return _clamp(raw, 0, 5)
+    economy = (stat.runs_conceded / stat.balls_bowled) * 6
+    wickets_pts = min(stat.wickets * 1.0, 5.0)
+    economy_pts = _clamp((12 - economy) / 2, 0, 2.5)
+    return _clamp(wickets_pts + economy_pts, 0, 5)
 
 
 def _fielding_raw(stat):
