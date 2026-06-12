@@ -19,13 +19,17 @@ class UserHTMxTable(tables.Table):
     fielding_rating = tables.Column(verbose_name="Fielding")
     is_staff = tables.BooleanColumn(verbose_name="Staff Status", yesno='✓,✗')
     last_login = tables.Column(verbose_name="Last Login")
-    wallet_amount = tables.Column(verbose_name="Wallet Amount", empty_values=(), orderable=False)
+    wallet_amount = tables.Column(
+        verbose_name="Wallet Amount", empty_values=(), orderable=False)
 
     class Meta:
         model = User
         template_name = "tables/tailwind_table.html"
-        fields = ("id", "username", "role", "batting_rating", "bowling_rating", "fielding_rating", "is_staff", "last_login", "wallet_amount")
-        sequence = ("id", "username", "role", "batting_rating", "bowling_rating", "fielding_rating", "last_login", "is_staff", "wallet_amount")
+        fields = ("id", "username", "role", "batting_rating", "bowling_rating",
+                  "fielding_rating", "is_staff", "last_login", "wallet_amount")
+        sequence = ("id", "username", "role", "batting_rating", "bowling_rating",
+                    "fielding_rating", "last_login", "is_staff", "wallet_amount")
+        order_by = "username"
 
     def render_username(self, value, record):
         # Link to the member's profile, where staff can see their full history

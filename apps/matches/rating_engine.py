@@ -146,14 +146,24 @@ def _weighted_average(values_newest_first):
 
 
 def _recalculate_ratings(user):
-    """Recompute and save the three ratings on user from their full history."""
-    # Fetch all stat rows ordered newest session first
+    """Recompute and save the three ratings on user from their full history.
+
+    Rules:
+    - No session history at all (brand new player) → keep existing rating (2.5 default)
+    - Has session history but never batted → batting_rating = 0
+    - Has session history but never bowled → bowling_rating = 0
+    - Has session history but no catches/stumpings → fielding_rating = 0
+    """
     stat_rows = list(
         PlayerSessionStat.objects
         .filter(user=user)
         .select_related('session')
         .order_by('-session__date', '-session__id')
     )
+
+    # Brand new player — no match history at all → leave ratings as-is (2.5 default)
+    if not stat_rows:
+        return
 
     batting_avg = _weighted_average([_batting_raw(s) for s in stat_rows])
     bowling_avg = _weighted_average([_bowling_raw(s) for s in stat_rows])

@@ -294,11 +294,9 @@ def session_detail_view(request, session_id):
             'rating': _combined_rating(u),
         }
 
-    _ROLE_ORDER = {'batsman': 0, 'allrounder': 1,
-                   'all-rounder': 1, 'bowler': 2}
-
-    def _role_sort_key(p):
-        return _ROLE_ORDER.get((p['user'].role or '').lower(), 3)
+    def _name_sort_key(p):
+        u = p['user']
+        return (u.first_name or u.username).lower()
 
     user_vote = None
     yes_votes = no_votes = total_votes = 0
@@ -345,13 +343,13 @@ def session_detail_view(request, session_id):
             edit_team1_players = sorted([
                 {'user': p.user, **_player_skills(p.user)}
                 for p in edit_team1.players.select_related('user').all()
-            ], key=_role_sort_key)
+            ], key=_name_sort_key)
         if len(teams) >= 2:
             edit_team2 = teams[1]
             edit_team2_players = sorted([
                 {'user': p.user, **_player_skills(p.user)}
                 for p in edit_team2.players.select_related('user').all()
-            ], key=_role_sort_key)
+            ], key=_name_sort_key)
 
     assigned_ids = {
         p['user'].id for p in edit_team1_players + edit_team2_players}

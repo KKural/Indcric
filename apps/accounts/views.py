@@ -36,7 +36,7 @@ class UsersHtmxTableView(SingleTableMixin, FilterView):
         return [self.template_name]
 
     def get_queryset(self):
-        return super().get_queryset()
+        return super().get_queryset().order_by('first_name', 'username')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
