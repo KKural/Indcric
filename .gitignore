@@ -9,6 +9,9 @@ temp.ipynb
 *.ipynb
 test_examples.py
 
+# Kural's local analysis scripts (not for the repo)
+kural/
+
 # C extensions
 *.so
 *.sql
